@@ -49,21 +49,12 @@ bot.html5.API = {
 
 
 /**
- * True if the current browser is IE version 8 or earlier.
- * @private {boolean}
- * @const
- */
-bot.html5.IS_IE8_OR_EARLIER_ = goog.userAgent.IE &&
-    !bot.userAgent.isEngineVersion(9);
-
-
-/**
  * True if the current browser is Safari version 4 or earlier.
  * @private {boolean}
  * @const
  */
 bot.html5.IS_SAFARI4_OR_EARLIER_ = goog.userAgent.product.SAFARI &&
-    !bot.userAgent.isProductVersion(5);
+  !bot.userAgent.isProductVersion(5);
 
 
 /**
@@ -72,7 +63,7 @@ bot.html5.IS_SAFARI4_OR_EARLIER_ = goog.userAgent.product.SAFARI &&
  * @const
  */
 bot.html5.IS_ANDROID_FROYO_OR_EARLIER_ = goog.userAgent.product.ANDROID &&
-    !bot.userAgent.isProductVersion(2.3);
+  !bot.userAgent.isProductVersion(2.3);
 
 
 /**
@@ -81,9 +72,9 @@ bot.html5.IS_ANDROID_FROYO_OR_EARLIER_ = goog.userAgent.product.ANDROID &&
  * @const
  */
 bot.html5.IS_SAFARI_WINDOWS_ = goog.userAgent.WINDOWS &&
-    goog.userAgent.product.SAFARI &&
-    (bot.userAgent.isProductVersion(4)) &&
-    !bot.userAgent.isProductVersion(6);
+  goog.userAgent.product.SAFARI &&
+  (bot.userAgent.isProductVersion(4)) &&
+  !bot.userAgent.isProductVersion(6);
 
 
 /**
@@ -94,20 +85,13 @@ bot.html5.IS_SAFARI_WINDOWS_ = goog.userAgent.WINDOWS &&
  *     defaults to the main window.
  * @return {boolean} Whether the browser supports the feature.
  */
-bot.html5.isSupported = function(api, opt_window) {
+bot.html5.isSupported = function (api, opt_window) {
   var win = opt_window || bot.getWindow();
 
   switch (api) {
-    case bot.html5.API.APPCACHE:
-      // IE8 does not support application cache, though the APIs exist.
-      if (bot.html5.IS_IE8_OR_EARLIER_) {
-        return false;
-      }
-      return goog.isDefAndNotNull(win.applicationCache);
-
     case bot.html5.API.BROWSER_CONNECTION:
       return goog.isDefAndNotNull(win.navigator) &&
-          goog.isDefAndNotNull(win.navigator.onLine);
+        goog.isDefAndNotNull(win.navigator.onLine);
 
     case bot.html5.API.DATABASE:
       // Safari4 database API does not allow writes.
@@ -127,27 +111,19 @@ bot.html5.isSupported = function(api, opt_window) {
         return false;
       }
       return goog.isDefAndNotNull(win.navigator) &&
-          goog.isDefAndNotNull(win.navigator.geolocation);
+        goog.isDefAndNotNull(win.navigator.geolocation);
 
     case bot.html5.API.LOCAL_STORAGE:
-      // IE8 does not support local storage, though the APIs exist.
-      if (bot.html5.IS_IE8_OR_EARLIER_) {
-        return false;
-      }
       return goog.isDefAndNotNull(win.localStorage);
 
     case bot.html5.API.SESSION_STORAGE:
-      // IE8 does not support session storage, though the APIs exist.
-      if (bot.html5.IS_IE8_OR_EARLIER_) {
-        return false;
-      }
       return goog.isDefAndNotNull(win.sessionStorage) &&
-          // To avoid browsers that only support this API partically
-          // like some versions of FF.
-          goog.isDefAndNotNull(win.sessionStorage.clear);
+        // To avoid browsers that only support this API partically
+        // like some versions of FF.
+        goog.isDefAndNotNull(win.sessionStorage.clear);
 
     default:
       throw new bot.Error(bot.ErrorCode.UNKNOWN_ERROR,
-          'Unsupported API identifier provided as parameter');
+        'Unsupported API identifier provided as parameter');
   }
 };

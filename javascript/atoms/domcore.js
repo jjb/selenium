@@ -26,7 +26,6 @@ goog.provide('bot.dom.core');
 
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
-goog.require('bot.userAgent');
 goog.require('goog.array');
 goog.require('goog.dom');
 goog.require('goog.dom.NodeType');
@@ -63,23 +62,6 @@ bot.dom.core.getAttribute = function (element, attributeName) {
   // standardizeStyleAttribute method.
   if (attributeName == 'style') {
     return bot.dom.core.standardizeStyleAttribute_(element.style.cssText);
-  }
-
-  // In IE doc mode < 8, the "value" attribute of an <input> is only accessible
-  // as a property.
-  if (bot.userAgent.IE_DOC_PRE8 && attributeName == 'value' &&
-    bot.dom.core.isElement(element, goog.dom.TagName.INPUT)) {
-    return element['value'];
-  }
-
-  // In IE < 9, element.getAttributeNode will return null for some boolean
-  // attributes that are present, such as the selected attribute on <option>
-  // elements. This if-statement is sufficient if these cases are restricted
-  // to boolean attributes whose reflected property names are all lowercase
-  // (as attributeName is by this point), like "selected". We have not
-  // found a boolean attribute for which this does not work.
-  if (bot.userAgent.IE_DOC_PRE9 && element[attributeName] === true) {
-    return String(element.getAttribute(attributeName));
   }
 
   // When the attribute is not present, either attr will be null or
@@ -141,14 +123,6 @@ bot.dom.core.standardizeStyleAttribute_ = function (value) {
  * @return {*} The value of the property.
  */
 bot.dom.core.getProperty = function (element, propertyName) {
-  // When an <option>'s value attribute is not set, its value property should be
-  // its text content, but IE < 8 does not adhere to that behavior, so fix it.
-  // http://www.w3.org/TR/1999/REC-html401-19991224/interact/forms.html#adef-value-OPTION
-  if (bot.userAgent.IE_DOC_PRE8 && propertyName == 'value' &&
-    bot.dom.core.isElement(element, goog.dom.TagName.OPTION) &&
-    goog.isNull(bot.dom.core.getAttribute(element, 'value'))) {
-    return goog.dom.getRawTextContent(element);
-  }
   return element[propertyName];
 };
 

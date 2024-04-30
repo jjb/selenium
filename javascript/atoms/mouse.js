@@ -153,13 +153,7 @@ bot.Mouse.MOUSE_BUTTON_VALUE_MAP_ = (function () {
   // EventTypes can safely be used as keys without collisions in a JS Object,
   // because its toString method returns a unique string (the event type name).
   var buttonValueMap = {};
-  if (bot.userAgent.IE_DOC_PRE9) {
-    buttonValueMap[bot.events.EventType.CLICK] = [0, 0, 0, null];
-    buttonValueMap[bot.events.EventType.CONTEXTMENU] = [null, null, 0, null];
-    buttonValueMap[bot.events.EventType.MOUSEUP] = [1, 4, 2, null];
-    buttonValueMap[bot.events.EventType.MOUSEOUT] = [0, 0, 0, 0];
-    buttonValueMap[bot.events.EventType.MOUSEMOVE] = [1, 4, 2, 0];
-  } else if (goog.userAgent.WEBKIT || bot.userAgent.IE_DOC_9) {
+  if (goog.userAgent.WEBKIT || bot.userAgent.IE_DOC_9) {
     buttonValueMap[bot.events.EventType.CLICK] = [0, 1, 2, null];
     buttonValueMap[bot.events.EventType.CONTEXTMENU] = [null, null, 2, null];
     buttonValueMap[bot.events.EventType.MOUSEUP] = [0, 1, 2, null];
@@ -171,18 +165,6 @@ bot.Mouse.MOUSE_BUTTON_VALUE_MAP_ = (function () {
     buttonValueMap[bot.events.EventType.MOUSEUP] = [0, 1, 2, null];
     buttonValueMap[bot.events.EventType.MOUSEOUT] = [0, 0, 0, 0];
     buttonValueMap[bot.events.EventType.MOUSEMOVE] = [0, 0, 0, 0];
-  }
-
-  if (bot.userAgent.IE_DOC_10) {
-    buttonValueMap[bot.events.EventType.MSPOINTERDOWN] =
-      buttonValueMap[bot.events.EventType.MOUSEUP];
-    buttonValueMap[bot.events.EventType.MSPOINTERUP] =
-      buttonValueMap[bot.events.EventType.MOUSEUP];
-    buttonValueMap[bot.events.EventType.MSPOINTERMOVE] = [-1, -1, -1, -1];
-    buttonValueMap[bot.events.EventType.MSPOINTEROUT] =
-      buttonValueMap[bot.events.EventType.MSPOINTERMOVE];
-    buttonValueMap[bot.events.EventType.MSPOINTEROVER] =
-      buttonValueMap[bot.events.EventType.MSPOINTERMOVE];
   }
 
   buttonValueMap[bot.events.EventType.DBLCLICK] =
@@ -235,7 +217,7 @@ bot.Mouse.prototype.fireMousedown_ = function (opt_count) {
   // change the active element, this preempts the focus that would happen by
   // default on the mousedown, so we should not explicitly focus in this case.
   var beforeActiveElement;
-  var mousedownCanPreemptFocus = goog.userAgent.GECKO || goog.userAgent.IE;
+  var mousedownCanPreemptFocus = goog.userAgent.GECKO;
   if (mousedownCanPreemptFocus) {
     beforeActiveElement = bot.dom.getActiveElement(this.getElement());
   }
@@ -264,13 +246,6 @@ bot.Mouse.prototype.pressButton = function (button, opt_count) {
 
   var performFocus = this.fireMousedown_(opt_count);
   if (performFocus) {
-    if (bot.userAgent.IE_DOC_10 &&
-      this.buttonPressed_ == bot.Mouse.Button.LEFT &&
-      bot.dom.isElement(this.elementPressed_, goog.dom.TagName.OPTION)) {
-      this.fireMSPointerEvent(bot.events.EventType.MSGOTPOINTERCAPTURE,
-        this.clientXY_, 0, bot.Device.MOUSE_MS_POINTER_ID,
-        MSPointerEvent.MSPOINTER_TYPE_MOUSE, true);
-    }
     this.focusOnElement();
   }
 };
@@ -302,20 +277,7 @@ bot.Mouse.prototype.releaseButton = function (opt_force, opt_count) {
     // TODO: Middle button can also trigger click.
     if (this.buttonPressed_ == bot.Mouse.Button.LEFT &&
       this.getElement() == this.elementPressed_) {
-      if (!(bot.userAgent.WINDOWS_PHONE &&
-        bot.dom.isElement(this.elementPressed_, goog.dom.TagName.OPTION))) {
-        this.clickElement(this.clientXY_,
-          this.getButtonValue_(bot.events.EventType.CLICK),
-                          /* opt_force */ elementInteractableBeforeMouseup);
-      }
       this.maybeDoubleClickElement_();
-      if (bot.userAgent.IE_DOC_10 &&
-        this.buttonPressed_ == bot.Mouse.Button.LEFT &&
-        bot.dom.isElement(this.elementPressed_, goog.dom.TagName.OPTION)) {
-        this.fireMSPointerEvent(bot.events.EventType.MSLOSTPOINTERCAPTURE,
-          new goog.math.Coordinate(0, 0), 0, bot.Device.MOUSE_MS_POINTER_ID,
-          MSPointerEvent.MSPOINTER_TYPE_MOUSE, false);
-      }
       // TODO: In Linux, this fires after mousedown event.
     } else if (this.buttonPressed_ == bot.Mouse.Button.RIGHT) {
       this.fireMouseEvent_(bot.events.EventType.CONTEXTMENU);
@@ -388,21 +350,13 @@ bot.Mouse.prototype.move = function (element, coords) {
     }
     this.setElement(element);
 
-    // All browsers except IE fire the mouseover before the mousemove.
-    if (!goog.userAgent.IE) {
-      this.fireMouseEvent_(bot.events.EventType.MOUSEOVER, fromElement, null,
-        toElemWasInteractable);
-    }
+    // All browsers fire the mouseover before the mousemove.
+    this.fireMouseEvent_(bot.events.EventType.MOUSEOVER, fromElement, null,
+      toElemWasInteractable);
   }
 
   this.fireMouseEvent_(bot.events.EventType.MOUSEMOVE, null, null,
     toElemWasInteractable);
-
-  // IE fires the mouseover event after the mousemove.
-  if (goog.userAgent.IE && element != fromElement) {
-    this.fireMouseEvent_(bot.events.EventType.MOUSEOVER, fromElement, null,
-      toElemWasInteractable);
-  }
 
   this.nextClickIsDoubleClick_ = false;
 };
@@ -452,19 +406,6 @@ bot.Mouse.prototype.scroll = function (ticks) {
 bot.Mouse.prototype.fireMouseEvent_ = function (type, opt_related,
   opt_wheelDelta, opt_force, opt_count) {
   this.hasEverInteracted_ = true;
-  if (bot.userAgent.IE_DOC_10) {
-    var msPointerEvent = bot.Mouse.MOUSE_EVENT_MAP_[type];
-    if (msPointerEvent) {
-      // The pointerId for mouse events is always 1 and the mouse event is never
-      // fired if the MSPointer event fails.
-      if (!this.fireMSPointerEvent(msPointerEvent, this.clientXY_,
-        this.getButtonValue_(msPointerEvent), bot.Device.MOUSE_MS_POINTER_ID,
-        MSPointerEvent.MSPOINTER_TYPE_MOUSE, /* isPrimary */ true,
-        opt_related, opt_force)) {
-        return false;
-      }
-    }
-  }
   return this.fireMouseEvent(type, this.clientXY_,
     this.getButtonValue_(type), opt_related, opt_wheelDelta, opt_force, null, opt_count);
 };

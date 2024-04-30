@@ -90,17 +90,8 @@ bot.action.clear = function (element) {
 
   if (element.value) {
     bot.action.LegacyDevice_.focusOnElement(element);
-    if (goog.userAgent.IE && bot.dom.isInputType(element, 'range')) {
-      var min = element.min ? element.min : 0;
-      var max = element.max ? element.max : 100;
-      element.value = (max < min) ? min : min + (max - min) / 2;
-    } else {
-      element.value = '';
-    }
+    element.value = '';
     bot.events.fire(element, bot.events.EventType.CHANGE);
-    if (goog.userAgent.IE) {
-      bot.events.fire(element, bot.events.EventType.BLUR);
-    }
     var body = bot.getDocument().body;
     if (body) {
       bot.action.LegacyDevice_.focusOnElement(body);

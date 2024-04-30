@@ -217,12 +217,6 @@ bot.inject.recompileFunction_ = function (fn, theWindow) {
     try {
       return new theWindow['Function'](fn);
     } catch (ex) {
-      // Try to recover if in IE5-quirks mode
-      // Need to initialize the script engine on the passed-in window
-      if (goog.userAgent.IE && theWindow.execScript) {
-        theWindow.execScript(';');
-        return new theWindow['Function'](fn);
-      }
       throw ex;
     }
   }

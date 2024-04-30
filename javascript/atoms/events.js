@@ -48,8 +48,7 @@ goog.require('goog.userAgent.product');
  * @const
  * @type {boolean}
  */
-bot.events.SUPPORTS_TOUCH_EVENTS = !(goog.userAgent.IE &&
-  !bot.userAgent.isEngineVersion(10));
+bot.events.SUPPORTS_TOUCH_EVENTS = true;
 
 
 /**
@@ -300,27 +299,6 @@ bot.events.MouseEventFactory_.prototype.create = function (target, opt_args) {
     detail, /*screenX*/ args.clientX, /*screenY*/ args.clientY,
     args.clientX, args.clientY, args.ctrlKey, args.altKey,
     args.shiftKey, args.metaKey, args.button, args.relatedTarget);
-
-  // Trying to modify the properties throws an error,
-  // so we define getters to return the correct values.
-  if (goog.userAgent.IE &&
-    event.pageX === 0 && event.pageY === 0 && Object.defineProperty) {
-    var scrollElem = goog.dom.getDomHelper(target).getDocumentScrollElement();
-    var clientElem = goog.style.getClientViewportElement(doc);
-    var pageX = args.clientX + scrollElem.scrollLeft - clientElem.clientLeft;
-    var pageY = args.clientY + scrollElem.scrollTop - clientElem.clientTop;
-
-    Object.defineProperty(event, 'pageX', {
-      get: function () {
-        return pageX;
-      }
-    });
-    Object.defineProperty(event, 'pageY', {
-      get: function () {
-        return pageY;
-      }
-    });
-  }
 
   return event;
 };
