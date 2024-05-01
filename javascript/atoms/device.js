@@ -336,21 +336,6 @@ bot.Device.prototype.fireMSPointerEvent = function (type, coord, button,
  * @private
  */
 bot.Device.prototype.getTargetOfOptionMouseEvent_ = function (type) {
-  // IE either fires the event on the parent select or not at all.
-  if (goog.userAgent.IE) {
-    switch (type) {
-      case bot.events.EventType.MOUSEOVER:
-      case bot.events.EventType.MSPOINTEROVER:
-        return null;
-      case bot.events.EventType.CONTEXTMENU:
-      case bot.events.EventType.MOUSEMOVE:
-      case bot.events.EventType.MSPOINTERMOVE:
-        return this.select_.multiple ? this.select_ : null;
-      default:
-        return this.select_;
-    }
-  }
-
   // WebKit always fires on the option element of multi-selects.
   // On single-selects, it either fires on the parent or not at all.
   if (goog.userAgent.WEBKIT) {
@@ -412,22 +397,6 @@ bot.Device.prototype.clickElement = function (coord, button, opt_force,
   var isRadioOrCheckbox = !this.select_ && bot.dom.isSelectable(this.element_);
   var wasChecked = isRadioOrCheckbox && bot.dom.isSelected(this.element_);
 
-  // NOTE: Clicking on a form submit button is a little broken:
-  // (1) When clicking a form submit button in IE, firing a click event or
-  // calling Form.submit() will not by itself submit the form, so we call
-  // Element.click() explicitly, but as a result, the coordinates of the click
-  // event are not provided. Also, when clicking on an <input type=image>, the
-  // coordinates click that are submitted with the form are always (0, 0).
-  // (2) When clicking a form submit button in GECKO, while the coordinates of
-  // the click event are correct, those submitted with the form are always (0,0)
-  // .
-  // TODO: See if either of these can be resolved, perhaps by adding
-  // hidden form elements with the coordinates before the form is submitted.
-  if (goog.userAgent.IE && targetButton) {
-    targetButton.click();
-    return;
-  }
-
   var performDefault = this.fireMouseEvent(
     bot.events.EventType.CLICK, coord, button, null, 0, opt_force,
     opt_pointerId);
@@ -467,37 +436,18 @@ bot.Device.prototype.focusOnElement = function () {
   }
 
   // If there is a currently active element, try to blur it.
-  if (activeElement && (goog.isFunction(activeElement.blur) ||
-    // IE reports native functions as being objects.
-    goog.userAgent.IE && goog.isObject(activeElement.blur))) {
-    // In IE, the focus() and blur() functions fire their respective events
-    // asynchronously, and as the result, the focus/blur events fired by the
-    // the atoms actions will often be in the wrong order on IE. Firing a blur
-    // out of order sometimes causes IE to throw an "Unspecified error", so we
-    // wrap it in a try-catch and catch and ignore the error in this case.
+  if (activeElement && (goog.isFunction(activeElement.blur))) {
     if (!bot.dom.isElement(activeElement, goog.dom.TagName.BODY)) {
       try {
         activeElement.blur();
       } catch (e) {
-        if (!(goog.userAgent.IE && e.message == 'Unspecified error.')) {
-          throw e;
-        }
+        throw e;
       }
-    }
-
-    // Sometimes IE6 and IE7 will not fire an onblur event after blur()
-    // is called, unless window.focus() is called immediately afterward.
-    // Note that IE8 will hit this branch unless the page is forced into
-    // IE8-strict mode. This shouldn't hurt anything, we just use the
-    // useragent sniff so we can compile this out for proper browsers.
-    if (goog.userAgent.IE && !bot.userAgent.isEngineVersion(8)) {
-      goog.dom.getWindow(goog.dom.getOwnerDocument(elementToFocus)).focus();
     }
   }
 
   // Try to focus on the element.
-  if (goog.isFunction(elementToFocus.focus) ||
-    goog.userAgent.IE && goog.isObject(elementToFocus.focus)) {
+  if (goog.isFunction(elementToFocus.focus)) {
     elementToFocus.focus();
     return true;
   }
@@ -583,15 +533,6 @@ bot.Device.shouldFollowHref_ = function (element) {
 bot.Device.followHref_ = function (anchorElement) {
   var targetHref = anchorElement.href;
   var owner = goog.dom.getWindow(goog.dom.getOwnerDocument(anchorElement));
-
-  // IE7 and earlier incorrect resolve a relative href against the top window
-  // location instead of the window to which the href is assigned. As a result,
-  // we have to resolve the relative URL ourselves. We do not use Closure's
-  // goog.Uri to resolve, because it incorrectly fails to support empty but
-  // undefined query and fragment components and re-encodes the given url.
-  if (goog.userAgent.IE && !bot.userAgent.isEngineVersion(8)) {
-    targetHref = bot.Device.resolveUrl_(owner.location, targetHref);
-  }
 
   if (anchorElement.target) {
     owner.open(targetHref, anchorElement.target);
@@ -701,8 +642,6 @@ bot.Device.prototype.submitForm = function (form) {
     // (and thus goog.isFunction) doesn't work for form.submit in IE < 8.
     if (!bot.dom.isElement(form.submit)) {
       form.submit();
-    } else if (!goog.userAgent.IE || bot.userAgent.isEngineVersion(8)) {
-      /** @type {Function} */ (form.constructor.prototype['submit']).call(form);
     } else {
       var idMasks = bot.locators.findElements({ 'id': 'submit' }, form);
       var nameMasks = bot.locators.findElements({ 'name': 'submit' }, form);
