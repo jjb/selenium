@@ -71,8 +71,7 @@ bot.events.BROKEN_TOUCH_API_ = (function () {
  * @const
  * @type {boolean}
  */
-bot.events.SUPPORTS_MSPOINTER_EVENTS =
-  goog.userAgent.IE && bot.getWindow().navigator.msPointerEnabled;
+bot.events.SUPPORTS_MSPOINTER_EVENTS = false;
 
 
 /**

@@ -24,7 +24,6 @@ goog.provide('bot.json');
 
 goog.require('bot.userAgent');
 goog.require('goog.json');
-goog.require('goog.userAgent');
 
 
 /**
@@ -48,14 +47,7 @@ bot.json.NATIVE_JSON = true;
  * @see http://caniuse.com/#search=JSON
  * @private {boolean}
  */
-bot.json.SUPPORTS_NATIVE_JSON_ =
-    // List WebKit first since every supported version supports
-    // native JSON (and we can compile away large chunks of code for
-    // individual fragments by setting the appropriate compiler flags).
-    goog.userAgent.WEBKIT ||
-    (goog.userAgent.GECKO && bot.userAgent.isEngineVersion(3.5)) ||
-    (goog.userAgent.IE && bot.userAgent.isEngineVersion(8));
-
+bot.json.SUPPORTS_NATIVE_JSON_ = true;
 
 /**
  * Converts a JSON object to its string representation.

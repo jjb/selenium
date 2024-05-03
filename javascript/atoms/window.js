@@ -42,7 +42,7 @@ goog.require('goog.userAgent.product');
  * @private {boolean}
  * @const
  */
-bot.window.HISTORY_LENGTH_INCLUDES_NEW_PAGE_ = !goog.userAgent.IE;
+bot.window.HISTORY_LENGTH_INCLUDES_NEW_PAGE_ = true;
 
 
 /**
@@ -307,13 +307,8 @@ bot.window.getPosition = function (opt_win) {
   var win = opt_win || bot.getWindow();
   var x, y;
 
-  if (goog.userAgent.IE) {
-    x = win.screenLeft;
-    y = win.screenTop;
-  } else {
-    x = win.screenX;
-    y = win.screenY;
-  }
+  x = win.screenX;
+  y = win.screenY;
 
   return new goog.math.Coordinate(x, y);
 };

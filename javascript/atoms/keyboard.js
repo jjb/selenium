@@ -400,7 +400,7 @@ bot.Keyboard.prototype.setKeyPressed_ = function (key, isPressed) {
  * @private {string}
  * @const
  */
-bot.Keyboard.NEW_LINE_ = goog.userAgent.IE ? '\r\n' : '\n';
+bot.Keyboard.NEW_LINE_ = '\n';
 
 
 /**
@@ -465,8 +465,6 @@ bot.Keyboard.prototype.requiresKeyPress_ = function (key) {
     return true;
   } else if (goog.userAgent.WEBKIT || goog.userAgent.EDGE) {
     return false;
-  } else if (goog.userAgent.IE) {
-    return key == bot.Keyboard.Keys.ESC;
   } else { // Gecko
     switch (key) {
       case bot.Keyboard.Keys.SHIFT:
@@ -641,9 +639,7 @@ bot.Keyboard.prototype.updateOnEnter_ = function () {
     } else {
       this.getElement().value += bot.Keyboard.NEW_LINE_;
     }
-    if (!goog.userAgent.IE) {
-      this.fireHtmlEvent(bot.events.EventType.INPUT);
-    }
+    this.fireHtmlEvent(bot.events.EventType.INPUT);
     this.updateCurrentPos_(newPos);
   }
 };
@@ -679,15 +675,7 @@ bot.Keyboard.prototype.updateOnBackspaceOrDelete_ = function (key) {
     endpoints[1] == 0);
   goog.dom.selection.setText(this.getElement(), '');
 
-  // Except for IE and GECKO, we need to fire the input event manually, but
-  // only if the text was actually changed.
-  // Note: Gecko has some strange behavior with the input event.  In a
-  //  textarea, backspace always sends an input event, while delete only
-  //  sends one if you actually change the text.
-  //  In a textbox/password box, backspace always sends an input event unless
-  //  the box has no text.  Delete behaves the same way in Firefox 3.0, but
-  //  in later versions it only fires an input event if no text changes.
-  if (!goog.userAgent.IE && textChanged ||
+  if (textChanged ||
     (goog.userAgent.GECKO && key == bot.Keyboard.Keys.BACKSPACE)) {
     this.fireHtmlEvent(bot.events.EventType.INPUT);
   }

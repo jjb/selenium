@@ -42,12 +42,7 @@ goog.require('goog.userAgent.product.isVersion');
  *     than the given version.
  */
 bot.userAgent.isEngineVersion = function (version) {
-  if (goog.userAgent.IE) {
-    return goog.string.compareVersions(
-        /** @type {number} */(goog.userAgent.DOCUMENT_MODE), version) >= 0;
-  } else {
-    return goog.userAgent.isVersionOrHigher(version);
-  }
+  return goog.userAgent.isVersionOrHigher(version);
 };
 
 
@@ -124,50 +119,6 @@ bot.userAgent.ANDROID_VERSION_ = (function () {
     return '0';
   }
 })();
-
-
-/**
- * Whether the current document is IE in a documentMode older than 8.
- * @type {boolean}
- * @const
- */
-bot.userAgent.IE_DOC_PRE8 = goog.userAgent.IE &&
-  !goog.userAgent.isDocumentModeOrHigher(8);
-
-
-/**
- * Whether the current document is IE in IE9 (or newer) standards mode.
- * @type {boolean}
- * @const
- */
-bot.userAgent.IE_DOC_9 = goog.userAgent.isDocumentModeOrHigher(9);
-
-
-/**
- * Whether the current document is IE in a documentMode older than 9.
- * @type {boolean}
- * @const
- */
-bot.userAgent.IE_DOC_PRE9 = goog.userAgent.IE &&
-  !goog.userAgent.isDocumentModeOrHigher(9);
-
-
-/**
- * Whether the current document is IE in IE10 (or newer) standards mode.
- * @type {boolean}
- * @const
- */
-bot.userAgent.IE_DOC_10 = goog.userAgent.isDocumentModeOrHigher(10);
-
-
-/**
- * Whether the current document is IE in a documentMode older than 10.
- * @type {boolean}
- * @const
- */
-bot.userAgent.IE_DOC_PRE10 = goog.userAgent.IE &&
-  !goog.userAgent.isDocumentModeOrHigher(10);
-
 
 /**
  * Whether the current browser is Android pre-gingerbread.

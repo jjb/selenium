@@ -118,9 +118,6 @@
       var topContainer = findElement({id:
           'scrollable-but-unscrolled-top-container'});
 
-      expectedFailures.expectFailureFor(
-          goog.userAgent.IE,
-          'IE scrollIntoView scrolls quite eagerly.');
       expectedFailures.run(function() {
         assertNotEquals(0, topContainer.scrollLeft);
         assertEquals(0, middleContainer.scrollLeft);
@@ -224,7 +221,6 @@
       // there are no scroll bars that get displayed.
       expectedFailures.expectFailureFor(
           goog.labs.userAgent.device.isMobile() || goog.labs.userAgent.device.isTablet() ||
-            (goog.userAgent.IE && !goog.userAgent.isVersion(7)) ||
             (goog.userAgent.product.CHROME && goog.userAgent.MAC));
 
       expectedFailures.run(function() {

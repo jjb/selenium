@@ -21,8 +21,6 @@
   function setUpPage() {
     if (goog.userAgent.GECKO) {
       browser = 'GECKO';
-    } else if (goog.userAgent.IE) {
-      browser = 'IE';
     } else if (goog.userAgent.WEBKIT || goog.userAgent.EDGE) {
       browser = 'WEBKIT';
     } else {
