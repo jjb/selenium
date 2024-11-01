@@ -36,7 +36,6 @@ drivers = (
     "remote",
     "safari",
     "webkitgtk",
-    "chromiumedge",
     "wpewebkit",
 )
 
@@ -74,6 +73,19 @@ def pytest_addoption(parser):
         dest="headless",
         help="Allow tests to run in headless",
     )
+    parser.addoption(
+        "--use-lan-ip",
+        action="store_true",
+        dest="use_lan_ip",
+        help="Whether to start test server with lan ip instead of localhost",
+    )
+    parser.addoption(
+        "--bidi",
+        action="store",
+        dest="bidi",
+        metavar="BIDI",
+        help="Whether to enable BiDi support",
+    )
 
 
 def pytest_ignore_collect(path, config):
@@ -92,10 +104,8 @@ driver_instance = None
 def driver(request):
     kwargs = {}
 
-    try:
-        driver_class = request.param.capitalize()
-    except AttributeError:
-        raise Exception("This test requires a --driver to be specified.")
+    # browser can be changed with `--driver=firefox` as an argument or to addopts in pytest.ini
+    driver_class = getattr(request, "param", "Chrome").capitalize()
 
     # skip tests if not available on the platform
     _platform = platform.system()
@@ -144,7 +154,8 @@ def driver(request):
             options = get_options(driver_class, request.config)
         if driver_class == "Edge":
             options = get_options(driver_class, request.config)
-        if driver_class == "WPEWebKit":
+        if driver_class.lower() == "wpewebkit":
+            driver_class = "WPEWebKit"
             options = get_options(driver_class, request.config)
         if driver_path is not None:
             kwargs["service"] = get_service(driver_class, driver_path)
@@ -154,6 +165,20 @@ def driver(request):
         driver_instance = getattr(webdriver, driver_class)(**kwargs)
     yield driver_instance
 
+    # Close the browser after BiDi tests. Those make event subscriptions
+    # and doesn't seems to be stable enough, causing the flakiness of the
+    # subsequent tests.
+    # Remove this when BiDi implementation and API is stable.
+    if bool(request.config.option.bidi):
+
+        def fin():
+            global driver_instance
+            if driver_instance is not None:
+                driver_instance.quit()
+            driver_instance = None
+
+        request.addfinalizer(fin)
+
     if request.node.get_closest_marker("no_driver_after_test"):
         driver_instance = None
 
@@ -162,10 +187,8 @@ def get_options(driver_class, config):
     browser_path = config.option.binary
     browser_args = config.option.args
     headless = bool(config.option.headless)
+    bidi = bool(config.option.bidi)
     options = None
-
-    if driver_class == "ChromiumEdge":
-        options = getattr(webdriver, "EdgeOptions")()
 
     if browser_path or browser_args:
         if not options:
@@ -173,7 +196,7 @@ def get_options(driver_class, config):
         if driver_class == "WebKitGTK":
             options.overlay_scrollbars_enabled = False
         if browser_path is not None:
-            options.binary_location = browser_path
+            options.binary_location = browser_path.strip("'")
         if browser_args is not None:
             for arg in browser_args.split():
                 options.add_argument(arg)
@@ -186,6 +209,14 @@ def get_options(driver_class, config):
             options.add_argument("--headless=new")
         if driver_class == "Firefox":
             options.add_argument("-headless")
+
+    if bidi:
+        if not options:
+            options = getattr(webdriver, f"{driver_class}Options")()
+
+        options.web_socket_url = True
+        options.unhandled_prompt_behavior = "ignore"
+
     return options
 
 
@@ -289,8 +320,10 @@ def server(request):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def webserver():
-    webserver = SimpleWebServer(host=get_lan_ip())
+def webserver(request):
+    host = get_lan_ip() if request.config.getoption("use_lan_ip") else None
+
+    webserver = SimpleWebServer(host=host)
     webserver.start()
     yield webserver
     webserver.stop()

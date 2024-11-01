@@ -48,7 +48,7 @@ module Selenium
         proxy = new
 
         ALLOWED.each do |k, v|
-          proxy.send("#{k}=", data[v]) if data.key?(v)
+          proxy.send(:"#{k}=", data[v]) if data.key?(v)
         end
 
         proxy
@@ -59,7 +59,7 @@ module Selenium
 
         opts.each do |k, v|
           if ALLOWED.key?(k)
-            send("#{k}=", v)
+            send(:"#{k}=", v)
           else
             not_allowed << k
           end

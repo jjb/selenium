@@ -212,7 +212,8 @@ public class ChromiumDriver extends RemoteWebDriver
     // Create the actual script we're going to use.
     String scriptToUse =
         String.format(
-            "window.seleniumPinnedScript%s = function(){%s}", Math.abs(script.hashCode()), script);
+            "window.seleniumPinnedScript%s = function(){%s}",
+            Math.abs((long) script.hashCode()), script);
 
     DevTools devTools = getDevTools();
     devTools.createSessionIfThereIsNotOne();
@@ -292,32 +293,38 @@ public class ChromiumDriver extends RemoteWebDriver
   }
 
   @Override
+  @Deprecated
   public LocalStorage getLocalStorage() {
     return webStorage.getLocalStorage();
   }
 
   @Override
+  @Deprecated
   public SessionStorage getSessionStorage() {
     return webStorage.getSessionStorage();
   }
 
   @Override
+  @Deprecated
   public Location location() {
     return locationContext.location();
   }
 
   @Override
+  @Deprecated
   public void setLocation(Location location) {
     Require.nonNull("Location", location);
     locationContext.setLocation(location);
   }
 
   @Override
+  @Deprecated
   public ConnectionType getNetworkConnection() {
     return networkConnection.getNetworkConnection();
   }
 
   @Override
+  @Deprecated
   public ConnectionType setNetworkConnection(ConnectionType type) {
     Require.nonNull("Network Connection Type", type);
     return networkConnection.setNetworkConnection(type);
@@ -341,13 +348,16 @@ public class ChromiumDriver extends RemoteWebDriver
   }
 
   private Optional<BiDi> createBiDi(Optional<URI> biDiUri) {
-    if (!biDiUri.isPresent()) {
+    if (biDiUri.isEmpty()) {
       return Optional.empty();
     }
 
     URI wsUri =
         biDiUri.orElseThrow(
-            () -> new BiDiException("This version of Chromium driver does not support BiDi"));
+            () ->
+                new BiDiException(
+                    "Check if this browser version supports BiDi and if the 'webSocketUrl: true'"
+                        + " capability is set."));
 
     HttpClient.Factory clientFactory = HttpClient.Factory.createDefault();
     ClientConfig wsConfig = ClientConfig.defaultConfig().baseUri(wsUri);

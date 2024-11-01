@@ -40,6 +40,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.ImmutableCapabilities;
+import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.SessionNotCreatedException;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.grid.data.CreateSessionRequest;
@@ -49,6 +50,7 @@ import org.openqa.selenium.grid.node.SessionFactory;
 import org.openqa.selenium.internal.Debug;
 import org.openqa.selenium.internal.Either;
 import org.openqa.selenium.internal.Require;
+import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.Command;
 import org.openqa.selenium.remote.Dialect;
 import org.openqa.selenium.remote.DriverCommand;
@@ -76,6 +78,7 @@ public class RelaySessionFactory implements SessionFactory {
   private final Duration sessionTimeout;
   private final URL serviceUrl;
   private final URL serviceStatusUrl;
+  private final String serviceProtocolVersion;
   private final Capabilities stereotype;
 
   public RelaySessionFactory(
@@ -84,12 +87,15 @@ public class RelaySessionFactory implements SessionFactory {
       Duration sessionTimeout,
       URI serviceUri,
       URI serviceStatusUri,
+      String serviceProtocolVersion,
       Capabilities stereotype) {
     this.tracer = Require.nonNull("Tracer", tracer);
     this.clientFactory = Require.nonNull("HTTP client", clientFactory);
     this.sessionTimeout = Require.nonNull("Session timeout", sessionTimeout);
     this.serviceUrl = createUrlFromUri(Require.nonNull("Service URL", serviceUri));
     this.serviceStatusUrl = createUrlFromUri(serviceStatusUri);
+    this.serviceProtocolVersion =
+        Require.nonNull("Service protocol version", serviceProtocolVersion);
     this.stereotype = ImmutableCapabilities.copyOf(Require.nonNull("Stereotype", stereotype));
   }
 
@@ -142,7 +148,16 @@ public class RelaySessionFactory implements SessionFactory {
           new SessionNotCreatedException(
               "New session request capabilities do not " + "match the stereotype."));
     }
-    capabilities = capabilities.merge(stereotype);
+
+    // remove browserName capability if 'appium:app' is present as it breaks appium tests when app
+    // is provided
+    // they are mutually exclusive
+    MutableCapabilities filteredStereotype = new MutableCapabilities(stereotype);
+    if (capabilities.getCapability("appium:app") != null) {
+      filteredStereotype.setCapability(CapabilityType.BROWSER_NAME, (String) null);
+    }
+
+    capabilities = capabilities.merge(filteredStereotype);
     LOG.info("Starting session for " + capabilities);
 
     try (Span span = tracer.getCurrentContext().createSpan("relay_session_factory.apply")) {
@@ -155,6 +170,9 @@ public class RelaySessionFactory implements SessionFactory {
 
       ClientConfig clientConfig =
           ClientConfig.defaultConfig().readTimeout(sessionTimeout).baseUrl(serviceUrl);
+      if (!serviceProtocolVersion.isEmpty()) {
+        clientConfig = clientConfig.version(serviceProtocolVersion);
+      }
       HttpClient client = clientFactory.createClient(clientConfig);
 
       Command command = new Command(null, DriverCommand.NEW_SESSION(capabilities));
@@ -187,12 +205,7 @@ public class RelaySessionFactory implements SessionFactory {
                 upstream,
                 stereotype,
                 mergedCapabilities,
-                Instant.now()) {
-              @Override
-              public void stop() {
-                // no-op
-              }
-            });
+                Instant.now()) {});
       } catch (Exception e) {
         span.setAttribute(AttributeKey.ERROR.getKey(), true);
         span.setStatus(Status.CANCELLED);
@@ -202,6 +215,7 @@ public class RelaySessionFactory implements SessionFactory {
                 "Error while creating session with the service %s. %s", serviceUrl, e.getMessage());
         attributeMap.put(EXCEPTION_MESSAGE.getKey(), errorMessage);
         span.addEvent(EXCEPTION_EVENT.getKey(), attributeMap);
+        client.close();
         return Either.left(new SessionNotCreatedException(errorMessage));
       }
     } catch (Exception e) {
@@ -214,8 +228,12 @@ public class RelaySessionFactory implements SessionFactory {
       // If no status endpoint was configured, we assume the server is up.
       return true;
     }
-    try {
-      HttpClient client = clientFactory.createClient(serviceStatusUrl);
+
+    ClientConfig clientConfig = ClientConfig.defaultConfig().baseUrl(serviceStatusUrl);
+    if (!serviceProtocolVersion.isEmpty()) {
+      clientConfig = clientConfig.version(serviceProtocolVersion);
+    }
+    try (HttpClient client = clientFactory.createClient(clientConfig)) {
       HttpResponse response =
           client.execute(new HttpRequest(HttpMethod.GET, serviceStatusUrl.toString()));
       LOG.log(Debug.getDebugLogLevel(), () -> Contents.string(response));

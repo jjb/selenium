@@ -122,15 +122,15 @@ module Selenium
         end
       end
 
-      def net_http_start(address, &block)
+      def net_http_start(address, &)
         http_proxy = ENV.fetch('http_proxy', nil) || ENV.fetch('HTTP_PROXY', nil)
         if http_proxy
           http_proxy = "http://#{http_proxy}" unless http_proxy.start_with?('http://')
           uri = URI.parse(http_proxy)
 
-          Net::HTTP.start(address, nil, uri.host, uri.port, &block)
+          Net::HTTP.start(address, nil, uri.host, uri.port, &)
         else
-          Net::HTTP.start(address, use_ssl: true, &block)
+          Net::HTTP.start(address, use_ssl: true, &)
         end
       end
 
@@ -183,6 +183,7 @@ module Selenium
     def initialize(jar, opts = {})
       raise Errno::ENOENT, jar unless File.exist?(jar)
 
+      @java = opts.fetch(:java, 'java')
       @jar = jar
       @host = '127.0.0.1'
       @role = opts.fetch(:role, 'standalone')
@@ -241,7 +242,7 @@ module Selenium
         # extract any additional_args that start with -D as options
         properties = @additional_args.dup - @additional_args.delete_if { |arg| arg[/^-D/] }
         args = ['-jar', @jar, @role, '--port', @port.to_s]
-        server_command = ['java'] + properties + args + @additional_args
+        server_command = [@java] + properties + args + @additional_args
         cp = WebDriver::ChildProcess.build(*server_command)
 
         if @log.is_a?(String)

@@ -63,7 +63,7 @@ def test_should_scroll_page_and_get_coordinates_of_an_element_that_is_out_of_vie
 
 
 @pytest.mark.xfail_chrome
-@pytest.mark.xfail_chromiumedge
+@pytest.mark.xfail_edge
 @pytest.mark.xfail_firefox
 @pytest.mark.xfail_remote
 @pytest.mark.xfail_safari
@@ -76,7 +76,7 @@ def test_should_get_coordinates_of_an_element_in_aframe(driver, pages):
 
 
 @pytest.mark.xfail_chrome
-@pytest.mark.xfail_chromiumedge
+@pytest.mark.xfail_edge
 @pytest.mark.xfail_firefox
 @pytest.mark.xfail_remote
 @pytest.mark.xfail_safari
@@ -109,12 +109,6 @@ def test_should_correctly_identify_that_an_element_has_width_and_height(driver, 
 
 
 def _check_location(location, **kwargs):
-    try:
-        # python 2.x
-        expected = kwargs.viewitems()
-        actual = location.viewitems()
-    except AttributeError:
-        # python 3.x
-        expected = kwargs.items()
-        actual = location.items()
+    expected = kwargs.items()
+    actual = location.items()
     assert expected <= actual

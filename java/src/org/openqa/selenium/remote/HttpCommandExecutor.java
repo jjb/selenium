@@ -19,7 +19,6 @@ package org.openqa.selenium.remote;
 
 import static java.util.Collections.emptyMap;
 import static org.openqa.selenium.json.Json.JSON_UTF_8;
-import static org.openqa.selenium.remote.DriverCommand.GET_ALL_SESSIONS;
 import static org.openqa.selenium.remote.DriverCommand.NEW_SESSION;
 import static org.openqa.selenium.remote.DriverCommand.QUIT;
 import static org.openqa.selenium.remote.HttpSessionId.getSessionId;
@@ -45,11 +44,11 @@ import org.openqa.selenium.remote.http.HttpResponse;
 public class HttpCommandExecutor implements CommandExecutor, NeedsLocalLogs {
 
   private final URL remoteServer;
-  private final HttpClient client;
+  public final HttpClient client;
   private final HttpClient.Factory httpClientFactory;
   private final Map<String, CommandInfo> additionalCommands;
-  private CommandCodec<HttpRequest> commandCodec;
-  private ResponseCodec<HttpResponse> responseCodec;
+  protected CommandCodec<HttpRequest> commandCodec;
+  protected ResponseCodec<HttpResponse> responseCodec;
 
   private LocalLogs logs = LocalLogs.getNullLogger();
 
@@ -148,7 +147,7 @@ public class HttpCommandExecutor implements CommandExecutor, NeedsLocalLogs {
       if (QUIT.equals(command.getName())) {
         return new Response();
       }
-      if (!GET_ALL_SESSIONS.equals(command.getName()) && !NEW_SESSION.equals(command.getName())) {
+      if (!NEW_SESSION.equals(command.getName())) {
         throw new NoSuchSessionException(
             "Session ID is null. Using WebDriver after calling quit()?");
       }

@@ -31,6 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -72,13 +73,15 @@ public class NodeOptions {
   public static final int DEFAULT_HEARTBEAT_PERIOD = 60;
   public static final int DEFAULT_SESSION_TIMEOUT = 300;
   public static final int DEFAULT_DRAIN_AFTER_SESSION_COUNT = 0;
+  public static final int DEFAULT_CONNECTION_LIMIT = 10;
   public static final boolean DEFAULT_ENABLE_CDP = true;
   public static final boolean DEFAULT_ENABLE_BIDI = true;
   static final String NODE_SECTION = "node";
   static final boolean DEFAULT_DETECT_DRIVERS = true;
   static final boolean DEFAULT_USE_SELENIUM_MANAGER = false;
   static final boolean OVERRIDE_MAX_SESSIONS = false;
-  static final String DEFAULT_VNC_ENV_VAR = "SE_START_XVFB";
+  static final List<String> DEFAULT_VNC_ENV_VARS =
+      Arrays.asList("SE_START_XVFB", "SE_START_VNC", "SE_START_NO_VNC");
   static final int DEFAULT_NO_VNC_PORT = 7900;
   static final int DEFAULT_REGISTER_CYCLE = 10;
   static final int DEFAULT_REGISTER_PERIOD = 120;
@@ -117,7 +120,7 @@ public class NodeOptions {
     }
 
     Optional<String> hubAddress = config.get(NODE_SECTION, "hub");
-    if (!hubAddress.isPresent()) {
+    if (hubAddress.isEmpty()) {
       return Optional.empty();
     }
 
@@ -160,6 +163,21 @@ public class NodeOptions {
 
   public boolean isManagedDownloadsEnabled() {
     return config.getBool(NODE_SECTION, "enable-managed-downloads").orElse(Boolean.FALSE);
+  }
+
+  public String getGridSubPath() {
+    return normalizeSubPath(getPublicGridUri().map(URI::getPath).orElse(""));
+  }
+
+  public static String normalizeSubPath(String prefix) {
+    prefix = prefix.trim();
+    if (!prefix.startsWith("/")) {
+      prefix = "/" + prefix; // Prefix with a '/' if absent.
+    }
+    if (prefix.endsWith("/")) {
+      prefix = prefix.substring(0, prefix.length() - 1); // Remove the trailing '/' if present.
+    }
+    return prefix;
   }
 
   public Node getNode() {
@@ -227,7 +245,7 @@ public class NodeOptions {
         ImmutableMultimap.builder();
 
     addDriverFactoriesFromConfig(sessionFactories);
-    addDriverConfigs(factoryFactory, sessionFactories);
+    addDriverConfigs(factoryFactory, sessionFactories, maxSessions);
     addSpecificDrivers(allDrivers, sessionFactories);
     addDetectedDrivers(allDrivers, sessionFactories);
 
@@ -243,6 +261,15 @@ public class NodeOptions {
       return maxSessions;
     }
     return Math.min(maxSessions, DEFAULT_MAX_SESSIONS);
+  }
+
+  public int getConnectionLimitPerSession() {
+    int connectionLimit =
+        config
+            .getInt(NODE_SECTION, "connection-limit-per-session")
+            .orElse(DEFAULT_CONNECTION_LIMIT);
+    Require.positive("Session connection limit", connectionLimit);
+    return connectionLimit;
   }
 
   public Duration getSessionTimeout() {
@@ -271,9 +298,16 @@ public class NodeOptions {
 
   @VisibleForTesting
   boolean isVncEnabled() {
-    String vncEnvVar = config.get(NODE_SECTION, "vnc-env-var").orElse(DEFAULT_VNC_ENV_VAR);
+    List<String> vncEnvVars = DEFAULT_VNC_ENV_VARS;
+    if (config.getAll(NODE_SECTION, "vnc-env-var").isPresent()) {
+      vncEnvVars = config.getAll(NODE_SECTION, "vnc-env-var").get();
+    }
     if (!vncEnabledValueSet.getAndSet(true)) {
-      vncEnabled.set(Boolean.parseBoolean(System.getenv(vncEnvVar)));
+      boolean allEnabled =
+          vncEnvVars.stream()
+              .allMatch(
+                  env -> "true".equalsIgnoreCase(System.getProperty(env, System.getenv(env))));
+      vncEnabled.set(allEnabled);
     }
     return vncEnabled.get();
   }
@@ -343,7 +377,8 @@ public class NodeOptions {
 
   private void addDriverConfigs(
       Function<ImmutableCapabilities, Collection<SessionFactory>> factoryFactory,
-      ImmutableMultimap.Builder<Capabilities, SessionFactory> sessionFactories) {
+      ImmutableMultimap.Builder<Capabilities, SessionFactory> sessionFactories,
+      int maxSessions) {
 
     Multimap<WebDriverInfo, SessionFactory> driverConfigs = HashMultimap.create();
 
@@ -354,6 +389,10 @@ public class NodeOptions {
         .ifPresent(
             drivers -> {
               List<Map<String, String>> configList = new ArrayList<>();
+              if (drivers.isEmpty()) {
+                // This is the case when the configuration is provided through the CLI.
+                config.getAll(NODE_SECTION, "driver-configuration").ifPresent(drivers::add);
+              }
 
               // iterate over driver configurations
               for (List<String> driver : drivers) {
@@ -454,9 +493,7 @@ public class NodeOptions {
 
                     int driverMaxSessions =
                         Integer.parseInt(
-                            thisConfig.getOrDefault(
-                                "max-sessions",
-                                String.valueOf(info.getMaximumSimultaneousSessions())));
+                            thisConfig.getOrDefault("max-sessions", String.valueOf(maxSessions)));
                     Require.positive("Driver max sessions", driverMaxSessions);
 
                     WebDriverInfo driverInfoConfig =
@@ -507,7 +544,7 @@ public class NodeOptions {
               sessionFactories.putAll(capabilities, entry.getValue());
             });
 
-    if (sessionFactories.build().size() == 0) {
+    if (sessionFactories.build().isEmpty()) {
       String logMessage = "No drivers have been configured or have been found on PATH";
       LOG.warning(logMessage);
       throw new ConfigException(logMessage);
@@ -517,7 +554,7 @@ public class NodeOptions {
   private void addSpecificDrivers(
       Map<WebDriverInfo, Collection<SessionFactory>> allDrivers,
       ImmutableMultimap.Builder<Capabilities, SessionFactory> sessionFactories) {
-    if (!config.getAll(NODE_SECTION, "driver-implementation").isPresent()) {
+    if (config.getAll(NODE_SECTION, "driver-implementation").isEmpty()) {
       return;
     }
 
@@ -548,7 +585,7 @@ public class NodeOptions {
             .filter(entry -> drivers.contains(entry.getKey().getDisplayName().toLowerCase()))
             .findFirst();
 
-    if (!first.isPresent()) {
+    if (first.isEmpty()) {
       throw new ConfigException("No drivers were found for %s", drivers.toString());
     }
 

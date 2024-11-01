@@ -17,8 +17,6 @@
 
 package org.openqa.selenium.remote;
 
-import static org.openqa.selenium.remote.ErrorCodes.SUCCESS;
-
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -45,7 +43,7 @@ public class ErrorHandler {
   private static final String UNKNOWN_METHOD = "<anonymous method>";
   private static final String UNKNOWN_FILE = null;
 
-  private ErrorCodes errorCodes;
+  private final ErrorCodes errorCodes;
 
   private boolean includeServerErrors;
 
@@ -82,7 +80,7 @@ public class ErrorHandler {
 
   @SuppressWarnings("unchecked")
   public Response throwIfResponseFailed(Response response, long duration) throws RuntimeException {
-    if (response.getStatus() == null || response.getStatus() == SUCCESS) {
+    if ("success".equals(response.getState())) {
       return response;
     }
 

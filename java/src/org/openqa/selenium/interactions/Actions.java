@@ -22,6 +22,7 @@ import static org.openqa.selenium.interactions.PointerInput.MouseButton.RIGHT;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -53,9 +54,15 @@ public class Actions {
   private PointerInput activePointer;
   private KeyInput activeKeyboard;
   private WheelInput activeWheel;
+  private Duration actionDuration;
 
   public Actions(WebDriver driver) {
+    this(driver, Duration.ofMillis(250));
+  }
+
+  public Actions(WebDriver driver, Duration duration) {
     this.driver = Require.nonNull("Driver", driver);
+    this.actionDuration = duration;
   }
 
   /**
@@ -214,7 +221,7 @@ public class Actions {
    */
   public Actions scrollToElement(WebElement element) {
     WheelInput.ScrollOrigin scrollOrigin = WheelInput.ScrollOrigin.fromElement(element);
-    return tick(getActiveWheel().createScroll(0, 0, 0, 0, Duration.ofMillis(250), scrollOrigin));
+    return tick(getActiveWheel().createScroll(0, 0, 0, 0, this.actionDuration, scrollOrigin));
   }
 
   /**
@@ -228,7 +235,7 @@ public class Actions {
   public Actions scrollByAmount(int deltaX, int deltaY) {
     WheelInput.ScrollOrigin scrollOrigin = WheelInput.ScrollOrigin.fromViewport();
     return tick(
-        getActiveWheel().createScroll(0, 0, deltaX, deltaY, Duration.ofMillis(250), scrollOrigin));
+        getActiveWheel().createScroll(0, 0, deltaX, deltaY, this.actionDuration, scrollOrigin));
   }
 
   /**
@@ -248,7 +255,7 @@ public class Actions {
     int x = scrollOrigin.getxOffset();
     int y = scrollOrigin.getyOffset();
     return tick(
-        getActiveWheel().createScroll(x, y, deltaX, deltaY, Duration.ofMillis(250), scrollOrigin));
+        getActiveWheel().createScroll(x, y, deltaX, deltaY, this.actionDuration, scrollOrigin));
   }
 
   /**
@@ -547,6 +554,10 @@ public class Actions {
     return this.activeWheel;
   }
 
+  public Duration getActionDuration() {
+    return this.actionDuration;
+  }
+
   /**
    * Generates a composite action containing all actions so far, ready to be performed (and resets
    * the internal builder state, so subsequent calls to this method will contain fresh sequences).
@@ -582,6 +593,10 @@ public class Actions {
     sequences.put(source, sequence);
 
     return sequence;
+  }
+
+  public Collection<Sequence> getSequences() {
+    return sequences.values();
   }
 
   private static class BuiltAction implements Action {

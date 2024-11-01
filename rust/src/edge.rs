@@ -34,6 +34,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub const EDGE_NAMES: &[&str] = &[
     "edge",
@@ -61,6 +63,8 @@ pub struct EdgeManager {
     pub config: ManagerConfig,
     pub http_client: Client,
     pub log: Logger,
+    pub tx: Sender<String>,
+    pub rx: Receiver<String>,
     pub download_browser: bool,
     pub browser_url: Option<String>,
 }
@@ -76,12 +80,15 @@ impl EdgeManager {
         let config = ManagerConfig::default(static_browser_name, driver_name);
         let default_timeout = config.timeout.to_owned();
         let default_proxy = &config.proxy;
+        let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
         Ok(Box::new(EdgeManager {
             browser_name: static_browser_name,
             driver_name,
             http_client: create_http_client(default_timeout, default_proxy)?,
             config,
             log: Logger::new(),
+            tx,
+            rx,
             download_browser: false,
             browser_url: None,
         }))
@@ -131,19 +138,19 @@ impl SeleniumManager for EdgeManager {
                 ),
                 (
                     BrowserPath::new(MACOS, STABLE),
-                    r#"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"#,
+                    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
                 ),
                 (
                     BrowserPath::new(MACOS, BETA),
-                    r#"/Applications/Microsoft Edge Beta.app/Contents/MacOS/Microsoft Edge Beta"#,
+                    "/Applications/Microsoft Edge Beta.app/Contents/MacOS/Microsoft Edge Beta",
                 ),
                 (
                     BrowserPath::new(MACOS, DEV),
-                    r#"/Applications/Microsoft Edge Dev.app/Contents/MacOS/Microsoft Edge Dev"#,
+                    "/Applications/Microsoft Edge Dev.app/Contents/MacOS/Microsoft Edge Dev",
                 ),
                 (
                     BrowserPath::new(MACOS, NIGHTLY),
-                    r#"/Applications/Microsoft Edge Canary.app/Contents/MacOS/Microsoft Edge Canary"#,
+                    "/Applications/Microsoft Edge Canary.app/Contents/MacOS/Microsoft Edge Canary",
                 ),
                 (BrowserPath::new(LINUX, STABLE), "/usr/bin/microsoft-edge"),
                 (
@@ -322,6 +329,14 @@ impl SeleniumManager for EdgeManager {
         self.log = log;
     }
 
+    fn get_sender(&self) -> &Sender<String> {
+        &self.tx
+    }
+
+    fn get_receiver(&self) -> &Receiver<String> {
+        &self.rx
+    }
+
     fn get_platform_label(&self) -> &str {
         let os = self.get_os();
         let arch = self.get_arch();
@@ -432,7 +447,15 @@ impl SeleniumManager for EdgeManager {
             return self.unavailable_discovery();
         }
 
-        let release = releases.first().unwrap();
+        let releases_with_artifacts: Vec<&Release> = releases
+            .into_iter()
+            .filter(|r| !r.artifacts.is_empty())
+            .collect();
+        if releases_with_artifacts.is_empty() {
+            return self.unavailable_discovery();
+        }
+
+        let release = releases_with_artifacts.first().unwrap();
         let artifacts: Vec<&Artifact> = release
             .artifacts
             .iter()
@@ -481,7 +504,7 @@ impl SeleniumManager for EdgeManager {
                     .to_string()
             } else {
                 format!(
-                    r#"Microsoft\Edge\Application\{}\msedge.exe"#,
+                    r"Microsoft\Edge\Application\{}\msedge.exe",
                     self.get_browser_version()
                 )
             };

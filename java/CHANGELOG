@@ -1,3 +1,252 @@
+v4.26.0
+======
+* Add CDP for Chrome 130 and remove 127
+* Add PAC proxy url to arguments for Selenium Manager (#14506)
+* Prevent closing the stdin, stdout, stderr streams (#14569)
+* Increasing of properties scope for better Appium compatibility (#14183)
+* Fix decoding of line endings (#14539)
+* Fix SpotBugs findings in `ChromiumDriver` and `PortProber` (#14589)
+* Fix `v*Network.java` conditions (#14585)
+* [grid] Enable the httpclient to perform async requests (#14409)
+* [grid] Limit the number of websocket connections per session (#14410)
+* [grid] Improvement for Node handling (#14628)
+* [grid] Add node sessionTimeout to Grid status (#14582)
+* [grid] Capability se:vncEnabled value based on list of vnc-env-var (#14584)
+* [grid] UI Sessions list view sort Duration in ascending by default (#14599)
+* [grid] UI Liveview disconnect noVNC websocket when closing dialog (#14598)
+* [grid] UI Overview is able to sort Nodes capabilities (#14571)
+
+v4.25.0
+======
+* Add CDP for Chrome 129 and remove 126
+* replace `fedcm` links with new ones (#14478)
+* toml: warn about upcoming change enforcing string to have quotes (#14491)
+* Escape cookie values when required for tests (#14486)
+
+v4.24.0
+======
+* Add "se" prefixed capabilities to session response (#14323)
+* Ensure all prefixed caps in request are added in response
+* [bidi] return the id of the listener added
+* [grid] shutdown the websocket on unexpected failures
+* Add JSpecify annotations to WebElement and SearchContext (#14291)
+* Add JSpecify annotations for WebDriver and 3 other interfaces (#14371)
+* Implement getAttributes() method of MBean, and update Number-based MBean attributes to return Number objects instead of Strings (#14153)
+* [grid] shutdown the client related to a websocket
+* [grid] release the upstream websocket
+* [grid] close the httpclient after connecting the websocket failed
+* [bidi] Add execute script high-level API (#14330)
+* [ci] Use a tag to figure out what we might want to release (#14378)
+* Add CDP for Chrome 128 and remove 125
+
+v4.23.1
+======
+* [bidi] Add dom mutation handler support (#14304)
+* [grid] Exclude status DRAINING when distributor getting available nodes (#14282)
+* [bidi] Add script pinning methods (#14305)
+* Allow setting JDKHttpClient connectionTimeout, readTimeout, version via system property (#14306)
+* remove package org.openqa.selenium.grid.session.remote (#14295)
+* close the HttClient in case starting the session fails
+* Adding system property to disable tracing `webdriver.remote.enableTracing`
+* wait for the close response #14280
+* [bidi] Add authentication handlers (#14334)
+* [grid] ensure the local_sessionmap.remove event is raised (#14337)
+* [bidi] Add filter auth handler (#14349)
+
+v4.23.0
+======
+* Use Files.notExists to check files #14088
+* Setting proxy in SM only when it is needed.
+* Remove `LocateNodeParameters.Builder`, deprecated since 4.20
+* Remove usage of deprecated methods in Require.java
+* Delete tests referencing deprecated methods in Require.java
+* [bidi] Remove the method that converts node value to RemoteWebElement
+* [bidi] Ensure the listeners returns an id (#14215)
+* [bidi] Fix the adding and the removing listener
+* [bidi] Ensure empty values are removed from the call back map
+* [bidi] Avoid creating new instances of log entry event
+* [bidi] Add source type to log entry (#14244)
+* Revert workaround for old netty http client (addendum to #12843) (#14134)
+* [grid] Remove 'browserName' capability from stereotype when using RelaySession (#14247)
+* Merge android specific parameters in chrome options (#14217)
+* Add custom duration for Actions constructor (#14085)
+* Consistent UTF-8 Encoding and Code Enhancements (#14218)
+* [grid] Set session-request-timeout as client readTimeout in RemoteNewSessionQueue (#14272)
+* [bidi]Add high-level logging APIs (#14225)
+* Add CDP for Chrome 127 and remove 124
+
+
+v4.22.0
+======
+
+* [grid] Log unsuccessful attempts to create a session
+* [grid] Prevent UrlChecker leaking threads on timeout
+* Add convenience for enabling BiDi (#14029)
+* Eliminate assumption of mutable list argument in SeleniumManager.getBinaryPaths() (#14036)
+* Add 'toJson' method to Rectangle class to produce expected serialization (#14038)
+* Let TracedCommandExecutor delegate NeedsLocalLogs calls
+* Add preference to enable CDP in Firefox by default (#14091)
+* [grid] Video file name set independently in dynamic grid via se:videoName (#14148)
+* Add CDP for Chrome 126 and remove 123
+* EdgeOptions.useWebView to return "this" (#14157)
+* Various minor performance improvements and code cleanup (#14054)
+* Use java.nio to check files (#14088)
+
+v4.21.0
+======
+
+* Add CDP for Chrome 125 and remove 122
+* [bidi]Add methods to allow all parameters for script callFunction and evaluate method (#13873)
+* Setting a connection timeout for the WebSocket connections
+* [grid] flatten combined routes to improve routing (#13856)
+* Java language level aids (#13834)
+* [grid] apply protocol version in relay session factory (#13880)
+* Configure Selenium Manager environment from System Properties (#13858)
+* [grid] Set test name to video file name in dynamic grid (#13907)
+* [grid] Set connection timeout to session-timeout in RemoteNode (#13854)
+* Type casting and numeric improvements (#13909)
+* Allow filters to recover from failed requests in NetworkInterceptor (#13847)
+* Allow a DevTools listener to determinate the order of handler calls (#13921)
+* Read selenium manager output as UTF-8 #13653
+* Reduce redundant toString() calls (#13932)
+* Fixed format of expires in Cookie.toString #13927
+* [bidi] Remove root ownership parameter due to update in BiDi spec
+
+v4.20.0
+======
+
+* Add CDP for Chrome 124 and remove 121
+* [bidi] Deprecate using builder for Locate Node parameters. (#13767)
+* [grid] handle baseRoute like the hubRoute and the graphqlRoute (#13772)
+* [grid] Fixing Dynamic Grid Docker (#13789)
+* [grid] Browser containers provisioned in dynamic grid uses node-docker hostConfig
+* Making Selenium Manager a thin wrapper (#13385)
+  * This change has been made to make it easier to maintain and improve, the interface has
+  changed and if users were invoking it, they might experience issues. Selenium Manager is
+  still in beta and these type of changes are expected.
+* [grid] Dynamic Grid re-fetch browser images if they were pruned during runtime (#13821)
+* [grid] Relay service can set protocol version in fetching status (#13849)
+* [cdp] Continue requests without modification for know errors in NetworkInterceptor (#13836)
+* [bidi] Update browsing context create method (#13766)
+
+v4.19.1
+======
+* [bidi] Fix the bazel file after the BiDi breaking change
+
+v4.19.0
+======
+* Add CDP for Chrome 123 and remove 120
+* Use daemon threads in JdkHttpClient #13601
+* Use a static class for ProxySelector #13622
+* Improve memory allocation of an idle relay node #13643
+* Close the httpclient after checking the service status #13643
+* [bidi] Add storage module (#13675)
+* [bidi] Add browser module (#13677)
+* [bidi] Add continueRequest and continueResponse command (#13692)
+* [bidi] Add provide response command (#13708)
+* [bidi] Add setFiles command of the Input Module (#13711)
+* Add JSON serialization for ShadowRoot (#13680)
+* [grid] Ensure the original RemoteNode stays DOWN #13646 (#13647)
+* Removed usage of FileBackedOutputStream in the client  (#13308)
+* [grid] Remove "se:bidi" (#13528)
+* [bidi] Update the capture screenshot APIs to include all parameters and remove scroll parameter (#13743)
+
+v4.18.1
+======
+
+* Add CDP for Chrome 122 and remove 119
+
+v4.18.0
+======
+
+* Recommitting self-signed certificate should not require certificate file
+* [bidi] Add browsing context destroyed event
+* Add missing support events for Web Driver Listener  (#13210)
+* [bidi] Add network intercept commands
+* [bidi] Add command "continuewithAuth"
+* [bidi] Add failRequest command
+* use the W3C state to detect errors
+* [grid] Fixing driver configuration parsing (Fixes #13531)
+* [cdp] Ensure dom mutation listener calls to webdriver apis are thread safe (Fixes #13500)
+* Fix typo in comment (#13549)
+* Allow `null` input in `FluentWait` (#13558)
+* Add missing event handlers for `TargetLocator` interface (#13559)
+* shutdown the process of a failed driver server start
+* ensure ExternalProcess.waitFor will not block
+* fixed the format of DriverService
+* use message templates in logger calls
+* [bidi] Add 'fetchError' event
+* Fixing NPE when "se:downloadsEnabled" not set (#13583)
+* Make Rectangle fields final to enhance immutability (#13586)
+* Use all provided options while merging them for Firefox (#13582)
+* Fix access modifier for script module classes
+* use the ErrorCodec to build the WebDriverException #13580
+* give the driver some time to terminate graceful
+
+v4.17.0
+======
+
+* Self-signed certificate do not require certificate file (#13268)
+* Remove deprecated event listener classes (#13200)
+* Add ability to disable UI on grid (#13212)
+* Recognise `chrome-headless-shell` as Chrome browser (#13292)
+* Remove most of guava from remote package
+* Add java to Selenium Manager input for tracking (see #13288)
+* Add cookie support for network module (#13325)
+* Refactored log capture and formatting code (#13322)
+* Add support for Input module (Actions) (#13259)
+* Close http connection for RemoteNode (#13313)
+* Add Duration overload to SlowLoadableComponent constructor and deprecate the int (#13309)
+* Improve logging errors (#13327)
+* Ensure calling close() and quit() don't cause BiDi websocket errors (#13333)
+* Check for emptiness instead of using length or size (#13335)
+* Remove unnecessary overridden methods (#13336)
+* improved logging when driver discovery failed
+* WebSocket NoVNC session against the grid URL contains trailing slash (#13353)
+* Updating channel name from Aurora to Dev
+* Removing mentions to firefox-bin in docs and tests
+* Deprecate FirefoxBinary class
+* Deprecate json wire related ErrorCodes
+* Fix the ScreenshotException message
+* Add ShadowRoot.hashCode / .equals #13326
+* Deprecate unused RemoteStatus
+* Remove use of guava from FluentWait
+* Remove all references to firefox-bin
+* Deprecate all html5 offline storage implementations See #10397 (#13373)
+* Remove endpoints and commands that are not w3c compliant (#13372)
+* Deprecate methods for getting and setting location (#13372)
+* Deprecate methods for getting and setting network connection (#13372)
+* remove non-w3c endpoint references that are mobile specific
+* Add auth required event
+* Copy the output in a daemon thread
+* No longer accept session requests with desiredCapabilities
+* Remove requiredCapabilities from metadata ignored list
+* Deprecate `AddWebStorage` augmenter provider as well (#13399)
+* Update logging and errors for driver management
+* Deprecate `ContextAware` interface (#13405)
+* Add check back to driver service session factory
+* Fix broken driver finder conditional
+* Node WebSocket not working with sub-path option (#13407)
+* Add window proxy properties class
+* Schema HTTPS in Distributor, SessionQueue, SessionMap (#13413)
+* Add BiDi Input module release command (#13362)
+* Add Node properties class as precursor to BiDi's locateNodes command
+* Deprecate `NoSuchContextException` (#13425)
+* Ensure the worker thread is stopped
+* Log the complete exception
+* Add deprecation annotation to FirefoxBinary
+* Add a warning while passing a decorated driver to augmenter (#13246)
+* Tapping the Node session when there is WebSocket activity (#12223)
+* Small code improvement in ProxyWebsocketsIntoGrid
+* Using `max-sessions` from Node when it was declared (#12836)
+* Fix typo in NodeFlags (#13440)
+* Add locate nodes command (#13445)
+* Add user friendly methods to locate nodes
+* Add click dialog support to Federated Credential Management implementation
+* Use the ErrorCodec to encode exceptions
+* Ignore null text of UnhandledAlertException
+* Add CDP for Chrome 121 and remove 118
+
 v4.16.1
 ======
 

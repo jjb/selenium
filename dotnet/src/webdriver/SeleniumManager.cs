@@ -16,16 +16,18 @@
 // limitations under the License.
 // </copyright>
 
-using Newtonsoft.Json;
-using OpenQA.Selenium.Internal;
 using OpenQA.Selenium.Internal.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using static OpenQA.Selenium.SeleniumManagerResponse;
+
+#nullable enable
 
 namespace OpenQA.Selenium
 {
@@ -37,25 +39,25 @@ namespace OpenQA.Selenium
     {
         private static readonly ILogger _logger = Log.GetLogger(typeof(SeleniumManager));
 
-        private static readonly string BinaryFullPath = Environment.GetEnvironmentVariable("SE_MANAGER_PATH");
+        private static readonly JsonSerializerOptions _serializerOptions = new() { PropertyNameCaseInsensitive = true, TypeInfoResolver = SeleniumManagerSerializerContext.Default };
 
-        static SeleniumManager()
+        private static readonly Lazy<string> _lazyBinaryFullPath = new(() =>
         {
-
-            if (BinaryFullPath == null)
+            string? binaryFullPath = Environment.GetEnvironmentVariable("SE_MANAGER_PATH");
+            if (binaryFullPath == null)
             {
                 var currentDirectory = AppContext.BaseDirectory;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    BinaryFullPath = Path.Combine(currentDirectory, "selenium-manager", "windows", "selenium-manager.exe");
+                    binaryFullPath = Path.Combine(currentDirectory, "selenium-manager", "windows", "selenium-manager.exe");
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
-                    BinaryFullPath = Path.Combine(currentDirectory, "selenium-manager", "linux", "selenium-manager");
+                    binaryFullPath = Path.Combine(currentDirectory, "selenium-manager", "linux", "selenium-manager");
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    BinaryFullPath = Path.Combine(currentDirectory, "selenium-manager", "macos", "selenium-manager");
+                    binaryFullPath = Path.Combine(currentDirectory, "selenium-manager", "macos", "selenium-manager");
                 }
                 else
                 {
@@ -64,65 +66,45 @@ namespace OpenQA.Selenium
                 }
             }
 
-            if (!File.Exists(BinaryFullPath))
+            if (!File.Exists(binaryFullPath))
             {
-                throw new WebDriverException($"Unable to locate or obtain Selenium Manager binary at {BinaryFullPath}");
+                throw new WebDriverException($"Unable to locate or obtain Selenium Manager binary at {binaryFullPath}");
             }
-        }
+
+            return binaryFullPath;
+        });
 
         /// <summary>
-        /// Determines the location of the correct driver.
+        /// Determines the location of the browser and driver binaries.
         /// </summary>
-        /// <param name="options">The correct path depends on which options are being used.</param>
+        /// <param name="arguments">List of arguments to use when invoking Selenium Manager.</param>
         /// <returns>
-        /// The location of the driver.
+        /// An array with two entries, one for the driver path, and another one for the browser path.
         /// </returns>
-        public static string DriverPath(DriverOptions options)
+        public static Dictionary<string, string> BinaryPaths(string arguments)
         {
-            StringBuilder argsBuilder = new StringBuilder();
-            argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --browser \"{0}\"", options.BrowserName);
+            StringBuilder argsBuilder = new StringBuilder(arguments);
+            argsBuilder.Append(" --language-binding csharp");
             argsBuilder.Append(" --output json");
-
-            if (!string.IsNullOrEmpty(options.BrowserVersion))
+            if (_logger.IsEnabled(LogEventLevel.Debug))
             {
-                argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --browser-version {0}", options.BrowserVersion);
+                argsBuilder.Append(" --debug");
             }
 
-            string browserBinary = options.BinaryLocation;
-            if (!string.IsNullOrEmpty(browserBinary))
+            var smCommandResult = RunCommand(_lazyBinaryFullPath.Value, argsBuilder.ToString());
+            Dictionary<string, string> binaryPaths = new()
             {
-                argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --browser-path \"{0}\"", browserBinary);
+                { "browser_path", smCommandResult.BrowserPath },
+                { "driver_path", smCommandResult.DriverPath }
+            };
+
+            if (_logger.IsEnabled(LogEventLevel.Trace))
+            {
+                _logger.Trace($"Driver path: {binaryPaths["driver_path"]}");
+                _logger.Trace($"Browser path: {binaryPaths["browser_path"]}");
             }
 
-            if (options.Proxy != null)
-            {
-                if (options.Proxy.SslProxy != null)
-                {
-                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --proxy \"{0}\"", options.Proxy.SslProxy);
-                }
-                else if (options.Proxy.HttpProxy != null)
-                {
-                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --proxy \"{0}\"", options.Proxy.HttpProxy);
-                }
-            }
-
-            Dictionary<string, object> output = RunCommand(BinaryFullPath, argsBuilder.ToString());
-
-            try
-            {
-                options.BinaryLocation = (string)output["browser_path"] == "" ? null : (string)output["browser_path"];
-                options.BrowserVersion = null;
-            }
-            catch (NotImplementedException)
-            {
-                // Cannot set Browser Location for this driver and that is ok
-            }
-
-            var driverPath = (string)output["driver_path"];
-
-            _logger.Trace($"Driver path: {driverPath}");
-
-            return driverPath;
+            return binaryPaths;
         }
 
         /// <summary>
@@ -133,10 +115,10 @@ namespace OpenQA.Selenium
         /// <returns>
         /// the standard output of the execution.
         /// </returns>
-        private static Dictionary<string, object> RunCommand(string fileName, string arguments)
+        private static ResultResponse RunCommand(string fileName, string arguments)
         {
             Process process = new Process();
-            process.StartInfo.FileName = BinaryFullPath;
+            process.StartInfo.FileName = _lazyBinaryFullPath.Value;
             process.StartInfo.Arguments = arguments;
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.CreateNoWindow = true;
@@ -165,7 +147,7 @@ namespace OpenQA.Selenium
 
                 if (process.ExitCode != 0)
                 {
-                    // We do not log any warnings coming from Selenium Manager like the other bindings as we don't have any logging in the .NET bindings
+                    // We do not log any warnings coming from Selenium Manager like the other bindings, as we don't have any logging in the .NET bindings
 
                     var exceptionMessageBuilder = new StringBuilder($"Selenium Manager process exited abnormally with {process.ExitCode} code: {fileName} {arguments}");
 
@@ -199,18 +181,47 @@ namespace OpenQA.Selenium
             }
 
             string output = outputBuilder.ToString().Trim();
-            Dictionary<string, object> result;
+
+            SeleniumManagerResponse jsonResponse;
+
             try
             {
-                Dictionary<string, object> deserializedOutput = JsonConvert.DeserializeObject<Dictionary<string, object>>(output, new ResponseValueJsonConverter());
-                result = deserializedOutput["result"] as Dictionary<string, object>;
+                jsonResponse = JsonSerializer.Deserialize<SeleniumManagerResponse>(output, _serializerOptions)!;
             }
             catch (Exception ex)
             {
                 throw new WebDriverException($"Error deserializing Selenium Manager's response: {output}", ex);
             }
 
-            return result;
+            if (jsonResponse.Logs is not null)
+            {
+                // Treat SM's logs always as Trace to avoid SM writing at Info level
+                if (_logger.IsEnabled(LogEventLevel.Trace))
+                {
+                    foreach (var entry in jsonResponse.Logs)
+                    {
+                        _logger.Trace($"{entry.Level} {entry.Message}");
+                    }
+                }
+            }
+
+            return jsonResponse.Result;
         }
     }
+
+    internal record SeleniumManagerResponse(IReadOnlyList<LogEntryResponse> Logs, ResultResponse Result)
+    {
+        public record LogEntryResponse(string Level, string Message);
+
+        public record ResultResponse
+        (
+            [property: JsonPropertyName("driver_path")]
+            string DriverPath,
+            [property: JsonPropertyName("browser_path")]
+            string BrowserPath
+        );
+    }
+
+    [JsonSerializable(typeof(SeleniumManagerResponse))]
+    internal partial class SeleniumManagerSerializerContext : JsonSerializerContext;
 }

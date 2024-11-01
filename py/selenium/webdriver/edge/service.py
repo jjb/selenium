@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 import typing
-import warnings
 
 from selenium.types import SubprocessStdAlias
 from selenium.webdriver.chromium import service
@@ -27,8 +26,6 @@ class Service(service.ChromiumService):
 
     :param executable_path: install path of the msedgedriver executable, defaults to `msedgedriver`.
     :param port: Port for the service to run on, defaults to 0 where the operating system will decide.
-    :param verbose: (Deprecated) Whether to make the webdriver more verbose (passes the --verbose option to the binary).
-        Defaults to False.
     :param log_output: (Optional) int representation of STDOUT/DEVNULL, any IO instance or String path to file.
     :param service_args: (Optional) List of args to be passed to the subprocess when launching the executable.
     :param env: (Optional) Mapping of environment variables for the new process, defaults to `os.environ`.
@@ -38,21 +35,14 @@ class Service(service.ChromiumService):
         self,
         executable_path: str = None,
         port: int = 0,
-        verbose: bool = False,
         log_output: SubprocessStdAlias = None,
         service_args: typing.Optional[typing.List[str]] = None,
         env: typing.Optional[typing.Mapping[str, str]] = None,
+        driver_path_env_key: str = None,
         **kwargs,
     ) -> None:
         self.service_args = service_args or []
-
-        if verbose:
-            warnings.warn(
-                "verbose=True is deprecated. Use `service_args=['--verbose', ...]` instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            self.service_args.append("--verbose")
+        driver_path_env_key = driver_path_env_key or "SE_EDGEDRIVER"
 
         super().__init__(
             executable_path=executable_path,
@@ -60,5 +50,6 @@ class Service(service.ChromiumService):
             service_args=service_args,
             log_output=log_output,
             env=env,
+            driver_path_env_key=driver_path_env_key,
             **kwargs,
         )

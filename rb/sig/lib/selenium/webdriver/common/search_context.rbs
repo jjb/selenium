@@ -1,7 +1,13 @@
 module Selenium
   module WebDriver
     module SearchContext
+      include _Driver
+
       FINDERS: untyped
+
+      attr_accessor self.extra_finders: untyped
+
+      def self.finders: -> untyped
 
       def find_element: (*untyped args) -> untyped
 

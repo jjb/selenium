@@ -84,6 +84,7 @@ module Selenium
 
         context 'when initializing driver' do
           let(:driver) { Edge::Driver }
+          let(:finder) { instance_double(DriverFinder, browser_path?: false, driver_path: '/path/to/driver') }
           let(:service) do
             instance_double(described_class, launch: service_manager, executable_path: nil, 'executable_path=': nil,
                                              class: described_class)
@@ -107,9 +108,7 @@ module Selenium
           end
 
           it 'is created when :url is not provided' do
-            allow(DriverFinder).to receive(:path).and_return('path')
-            allow(Platform).to receive(:assert_file)
-            allow(Platform).to receive(:assert_executable)
+            allow(DriverFinder).to receive(:new).and_return(finder)
             allow(described_class).to receive(:new).and_return(service)
 
             driver.new
@@ -117,9 +116,7 @@ module Selenium
           end
 
           it 'accepts :service without creating a new instance' do
-            allow(DriverFinder).to receive(:path).and_return('path')
-            allow(Platform).to receive(:assert_file)
-            allow(Platform).to receive(:assert_executable)
+            allow(DriverFinder).to receive(:new).and_return(finder)
             allow(described_class).to receive(:new)
 
             driver.new(service: service)
@@ -131,6 +128,28 @@ module Selenium
 
             expect(service.log).to be_nil
             expect(service.args).to eq ['--log-path=/path/to/log.txt']
+          end
+
+          context 'with a path env variable' do
+            let(:service) { described_class.new }
+            let(:service_path) { "/path/to/#{Service::EXECUTABLE}" }
+
+            before do
+              ENV['SE_EDGEDRIVER'] = service_path
+            end
+
+            after { ENV.delete('SE_EDGEDRIVER') }
+
+            it 'uses the path from the environment' do
+              expect(service.executable_path).to match(/edgedriver/)
+            end
+
+            it 'updates the path after setting the environment variable' do
+              ENV['SE_EDGEDRIVER'] = '/foo/bar'
+              service.executable_path = service_path
+
+              expect(service.executable_path).to match(/edgedriver/)
+            end
           end
         end
       end

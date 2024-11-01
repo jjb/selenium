@@ -88,8 +88,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.openqa.selenium.InvalidSelectorException;
 import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.remote.WebElementToJsonConverter;
 import org.openqa.selenium.remote.codec.AbstractHttpCommandCodec;
-import org.openqa.selenium.remote.internal.WebElementToJsonConverter;
 
 /**
  * A command codec that adheres to the W3C's WebDriver wire protocol.
@@ -393,7 +393,7 @@ public class W3CHttpCommandCodec extends AbstractHttpCommandCodec {
 
   private String cssEscape(String using) {
     using = CSS_ESCAPE.matcher(using).replaceAll("\\\\$1");
-    if (using.length() > 0 && Character.isDigit(using.charAt(0))) {
+    if (!using.isEmpty() && Character.isDigit(using.charAt(0))) {
       using = "\\" + (30 + Integer.parseInt(using.substring(0, 1))) + " " + using.substring(1);
     }
     return using;

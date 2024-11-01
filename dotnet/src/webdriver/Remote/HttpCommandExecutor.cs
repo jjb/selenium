@@ -16,9 +16,10 @@
 // limitations under the License.
 // </copyright>
 
+using OpenQA.Selenium.Internal;
+using OpenQA.Selenium.Internal.Logging;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -27,8 +28,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenQA.Selenium.Internal;
-using OpenQA.Selenium.Internal.Logging;
 
 namespace OpenQA.Selenium.Remote
 {
@@ -155,18 +154,31 @@ namespace OpenQA.Selenium.Remote
         }
 
         /// <summary>
-        /// Executes a command
+        /// Executes a command.
         /// </summary>
-        /// <param name="commandToExecute">The command you wish to execute</param>
-        /// <returns>A response from the browser</returns>
+        /// <param name="commandToExecute">The command you wish to execute.</param>
+        /// <returns>A response from the browser.</returns>
         public virtual Response Execute(Command commandToExecute)
+        {
+            return Task.Run(() => this.ExecuteAsync(commandToExecute)).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Executes a command as an asynchronous task.
+        /// </summary>
+        /// <param name="commandToExecute">The command you wish to execute.</param>
+        /// <returns>A task object representing the asynchronous operation.</returns>
+        public virtual async Task<Response> ExecuteAsync(Command commandToExecute)
         {
             if (commandToExecute == null)
             {
                 throw new ArgumentNullException(nameof(commandToExecute), "commandToExecute cannot be null");
             }
 
-            _logger.Debug($"Executing command: {commandToExecute}");
+            if (_logger.IsEnabled(LogEventLevel.Debug))
+            {
+                _logger.Debug($"Executing command: {commandToExecute}");
+            }
 
             HttpCommandInfo info = this.commandInfoRepository.GetCommandInfo<HttpCommandInfo>(commandToExecute.Name);
             if (info == null)
@@ -183,7 +195,7 @@ namespace OpenQA.Selenium.Remote
             HttpResponseInfo responseInfo = null;
             try
             {
-                responseInfo = Task.Run(async () => await this.MakeHttpRequest(requestInfo)).GetAwaiter().GetResult();
+                responseInfo = await this.MakeHttpRequest(requestInfo).ConfigureAwait(false);
             }
             catch (HttpRequestException ex)
             {
@@ -198,7 +210,10 @@ namespace OpenQA.Selenium.Remote
 
             Response toReturn = this.CreateResponse(responseInfo);
 
-            _logger.Debug($"Response: {toReturn}");
+            if (_logger.IsEnabled(LogEventLevel.Debug))
+            {
+                _logger.Debug($"Response: {toReturn}");
+            }
 
             return toReturn;
         }
@@ -233,7 +248,14 @@ namespace OpenQA.Selenium.Remote
 
             httpClientHandler.Proxy = this.Proxy;
 
-            this.client = new HttpClient(httpClientHandler);
+            HttpMessageHandler handler = httpClientHandler;
+
+            if (_logger.IsEnabled(LogEventLevel.Trace))
+            {
+                handler = new DiagnosticsHttpHandler(httpClientHandler, _logger);
+            }
+
+            this.client = new HttpClient(handler);
             this.client.DefaultRequestHeaders.UserAgent.ParseAdd(this.UserAgent);
             this.client.DefaultRequestHeaders.Accept.ParseAdd(RequestAcceptHeader);
             this.client.DefaultRequestHeaders.ExpectContinue = false;
@@ -279,12 +301,8 @@ namespace OpenQA.Selenium.Remote
                     requestMessage.Content.Headers.ContentType = contentTypeHeader;
                 }
 
-                _logger.Trace($">> {requestMessage}");
-
                 using (HttpResponseMessage responseMessage = await this.client.SendAsync(requestMessage).ConfigureAwait(false))
                 {
-                    _logger.Trace($"<< {responseMessage}");
-
                     HttpResponseInfo httpResponseInfo = new HttpResponseInfo();
                     httpResponseInfo.Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
                     httpResponseInfo.ContentType = responseMessage.Content.Headers.ContentType?.ToString();
@@ -299,14 +317,21 @@ namespace OpenQA.Selenium.Remote
         {
             Response response = new Response();
             string body = responseInfo.Body;
-            if (responseInfo.ContentType != null && responseInfo.ContentType.StartsWith(JsonMimeType, StringComparison.OrdinalIgnoreCase))
+            if ((int)responseInfo.StatusCode < 200 || (int)responseInfo.StatusCode > 299)
+            {
+                if (responseInfo.ContentType != null && responseInfo.ContentType.StartsWith(JsonMimeType, StringComparison.OrdinalIgnoreCase))
+                {
+                    response = Response.FromErrorJson(body);
+                }
+                else
+                {
+                    response.Status = WebDriverResult.UnhandledError;
+                    response.Value = body;
+                }
+            }
+            else if (responseInfo.ContentType != null && responseInfo.ContentType.StartsWith(JsonMimeType, StringComparison.OrdinalIgnoreCase))
             {
                 response = Response.FromJson(body);
-            }
-            else if (responseInfo.StatusCode.ToString().First() != '2')
-            {
-                response.Status = WebDriverResult.UnhandledError;
-                response.Value = body;
             }
             else
             {
@@ -367,6 +392,61 @@ namespace OpenQA.Selenium.Remote
             public HttpStatusCode StatusCode { get; set; }
             public string Body { get; set; }
             public string ContentType { get; set; }
+        }
+
+        /// <summary>
+        /// Internal diagnostic handler to log http requests/responses.
+        /// </summary>
+        private class DiagnosticsHttpHandler : DelegatingHandler
+        {
+            private readonly ILogger _logger;
+
+            public DiagnosticsHttpHandler(HttpMessageHandler messageHandler, ILogger logger)
+                : base(messageHandler)
+            {
+                _logger = logger;
+            }
+
+            /// <summary>
+            /// Sends the specified request and returns the associated response.
+            /// </summary>
+            /// <param name="request">The request to be sent.</param>
+            /// <param name="cancellationToken">A CancellationToken object to allow for cancellation of the request.</param>
+            /// <returns>The http response message content.</returns>
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                var responseTask = base.SendAsync(request, cancellationToken);
+
+                StringBuilder requestLogMessageBuilder = new();
+                requestLogMessageBuilder.AppendFormat(">> {0} RequestUri: {1}, Content: {2}, Headers: {3}", 
+                    request.Method, 
+                    request.RequestUri?.ToString() ?? "null", 
+                    request.Content?.ToString() ?? "null", 
+                    request.Headers?.Count());
+
+                if (request.Content != null)
+                {
+                    var requestContent = await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    requestLogMessageBuilder.AppendFormat("{0}{1}", Environment.NewLine, requestContent);
+                }
+
+                _logger.Trace(requestLogMessageBuilder.ToString());
+
+                var response = await responseTask.ConfigureAwait(false);
+
+                StringBuilder responseLogMessageBuilder = new();
+                responseLogMessageBuilder.AppendFormat("<< StatusCode: {0}, ReasonPhrase: {1}, Content: {2}, Headers: {3}", (int)response.StatusCode, response.ReasonPhrase, response.Content, response.Headers?.Count());
+
+                if (!response.IsSuccessStatusCode && response.Content != null)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    responseLogMessageBuilder.AppendFormat("{0}{1}", Environment.NewLine, responseContent);
+                }
+
+                _logger.Trace(responseLogMessageBuilder.ToString());
+
+                return response;
+            }
         }
     }
 }

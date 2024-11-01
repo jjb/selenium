@@ -211,13 +211,19 @@ class CdpBase:
         if self.session_id:
             request["sessionId"] = self.session_id
         request_str = json.dumps(request)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Sending CDP message: {cmd_id} {cmd_event}: {request_str}")
         try:
             await self.ws.send_message(request_str)
         except WsConnectionClosed as wcc:
             raise CdpConnectionClosed(wcc.reason) from None
         await cmd_event.wait()
         response = self.inflight_result.pop(cmd_id)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Received CDP message: {response}")
         if isinstance(response, Exception):
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Exception raised by {cmd_event} message: {type(response).__name__}")
             raise response
         return response
 
@@ -237,6 +243,8 @@ class CdpBase:
         an async with block. The block will not exit until the indicated
         event is received.
         """
+        sender: trio.MemorySendChannel
+        receiver: trio.MemoryReceiveChannel
         sender, receiver = trio.open_memory_channel(buffer_size)
         self.channels[event_type].add(sender)
         proxy = CmEventProxy()

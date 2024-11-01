@@ -167,7 +167,7 @@ module Selenium
 
         id << :deprecations if @allowed.include?(:deprecations)
 
-        message = +"[DEPRECATION] #{old} is deprecated"
+        message = "[DEPRECATION] #{old} is deprecated"
         message << if new
                      ". Use #{new} instead."
                    else
@@ -185,7 +185,7 @@ module Selenium
         logger.progname = name
         logger.level = level
         logger.formatter = proc do |severity, time, progname, msg|
-          "#{time.strftime('%F %T')} #{severity} #{progname} #{msg}\n"
+          "#{time.strftime('%F %T')} #{severity} #{progname} #{msg}\n".force_encoding('UTF-8')
         end
 
         logger
@@ -193,7 +193,7 @@ module Selenium
 
       def discard_or_log(level, message, id)
         id = Array(id)
-        return if (@ignored & id).any?
+        return if @ignored.intersect?(id)
         return if @allowed.any? && (@allowed & id).none?
 
         return if ::Logger::Severity.const_get(level.upcase) < @logger.level

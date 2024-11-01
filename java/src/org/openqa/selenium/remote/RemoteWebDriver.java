@@ -89,7 +89,6 @@ import org.openqa.selenium.print.PrintOptions;
 import org.openqa.selenium.remote.http.ClientConfig;
 import org.openqa.selenium.remote.http.ConnectionFailedException;
 import org.openqa.selenium.remote.http.HttpClient;
-import org.openqa.selenium.remote.internal.WebElementToJsonConverter;
 import org.openqa.selenium.remote.tracing.TracedHttpClient;
 import org.openqa.selenium.remote.tracing.Tracer;
 import org.openqa.selenium.remote.tracing.opentelemetry.OpenTelemetryTracer;
@@ -111,11 +110,15 @@ public class RemoteWebDriver
         TakesScreenshot {
 
   private static final Logger LOG = Logger.getLogger(RemoteWebDriver.class.getName());
+
+  /** Boolean system property that defines whether the tracing is enabled or not. */
+  private static final String WEBDRIVER_REMOTE_ENABLE_TRACING = "webdriver.remote.enableTracing";
+
   private final ElementLocation elementLocation = new ElementLocation();
   private Level level = Level.FINE;
   private ErrorHandler errorHandler = new ErrorHandler();
   private CommandExecutor executor;
-  private Capabilities capabilities;
+  protected Capabilities capabilities;
   private SessionId sessionId;
   private FileDetector fileDetector = new UselessFileDetector();
   private ExecuteMethod executeMethod;
@@ -125,13 +128,20 @@ public class RemoteWebDriver
   private Logs remoteLogs;
   private LocalLogs localLogs;
 
+  private Script remoteScript;
+
+  private Network remoteNetwork;
+
   // For cglib
   protected RemoteWebDriver() {
     this.capabilities = init(new ImmutableCapabilities());
   }
 
   public RemoteWebDriver(Capabilities capabilities) {
-    this(getDefaultServerURL(), Require.nonNull("Capabilities", capabilities), true);
+    this(
+        getDefaultServerURL(),
+        Require.nonNull("Capabilities", capabilities),
+        Boolean.parseBoolean(System.getProperty(WEBDRIVER_REMOTE_ENABLE_TRACING, "true")));
   }
 
   public RemoteWebDriver(Capabilities capabilities, boolean enableTracing) {
@@ -140,7 +150,9 @@ public class RemoteWebDriver
 
   public RemoteWebDriver(URL remoteAddress, Capabilities capabilities) {
     this(
-        createExecutor(Require.nonNull("Server URL", remoteAddress), true),
+        createExecutor(
+            Require.nonNull("Server URL", remoteAddress),
+            Boolean.parseBoolean(System.getProperty(WEBDRIVER_REMOTE_ENABLE_TRACING, "true"))),
         Require.nonNull("Capabilities", capabilities));
   }
 
@@ -207,11 +219,11 @@ public class RemoteWebDriver
     converter = new JsonToWebElementConverter(this);
     executeMethod = new RemoteExecuteMethod(this);
 
-    Set<String> logTypesToInclude = Set.of();
+    Set<String> logTypesToIgnore = Set.of();
 
-    LocalLogs performanceLogger = LocalLogs.getStoringLoggerInstance(logTypesToInclude);
+    LocalLogs performanceLogger = LocalLogs.getStoringLoggerInstance(logTypesToIgnore);
     LocalLogs clientLogs =
-        LocalLogs.getHandlerBasedLoggerInstance(LoggingHandler.getInstance(), logTypesToInclude);
+        LocalLogs.getHandlerBasedLoggerInstance(LoggingHandler.getInstance(), logTypesToIgnore);
     localLogs = LocalLogs.getCombinedLogsHolder(clientLogs, performanceLogger);
     remoteLogs = new RemoteLogs(executeMethod, localLogs);
 
@@ -485,6 +497,20 @@ public class RemoteWebDriver
   @Override
   public Options manage() {
     return new RemoteWebDriverOptions();
+  }
+
+  public Script script() {
+    if (this.remoteScript == null) {
+      this.remoteScript = new RemoteScript(this);
+    }
+    return this.remoteScript;
+  }
+
+  public Network network() {
+    if (this.remoteNetwork == null) {
+      this.remoteNetwork = new RemoteNetwork(this);
+    }
+    return this.remoteNetwork;
   }
 
   protected JsonToWebElementConverter getElementConverter() {

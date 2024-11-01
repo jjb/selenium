@@ -1,5 +1,4 @@
 // Licensed to the Software Freedom Conservancy (SFC) under one
-// Licensed to the Software Freedom Conservancy (SFC) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
 // regarding copyright ownership.  The SFC licenses this file
@@ -36,6 +35,8 @@ use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub const FIREFOX_NAME: &str = "firefox";
 pub const GECKODRIVER_NAME: &str = "geckodriver";
@@ -54,6 +55,7 @@ const FIREFOX_CANARY_LABEL: &str = "FIREFOX_NIGHTLY";
 const FIREFOX_ESR_LABEL: &str = "FIREFOX_ESR";
 const FIREFOX_VERSIONS_ENDPOINT: &str = "firefox_versions.json";
 const FIREFOX_HISTORY_ENDPOINT: &str = "firefox_history_stability_releases.json";
+const FIREFOX_HISTORY_MAJOR_ENDPOINT: &str = "firefox_history_major_releases.json";
 const FIREFOX_HISTORY_DEV_ENDPOINT: &str = "firefox_history_development_releases.json";
 const FIREFOX_NIGHTLY_URL: &str =
     "https://download.mozilla.org/?product=firefox-nightly-latest-ssl&os={}&lang={}";
@@ -71,6 +73,8 @@ pub struct FirefoxManager {
     pub config: ManagerConfig,
     pub http_client: Client,
     pub log: Logger,
+    pub tx: Sender<String>,
+    pub rx: Receiver<String>,
     pub download_browser: bool,
 }
 
@@ -81,12 +85,15 @@ impl FirefoxManager {
         let config = ManagerConfig::default(browser_name, driver_name);
         let default_timeout = config.timeout.to_owned();
         let default_proxy = &config.proxy;
+        let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
         Ok(Box::new(FirefoxManager {
             browser_name,
             driver_name,
             http_client: create_http_client(default_timeout, default_proxy)?,
             config,
             log: Logger::new(),
+            tx,
+            rx,
             download_browser: false,
         }))
     }
@@ -157,23 +164,23 @@ impl SeleniumManager for FirefoxManager {
             ),
             (
                 BrowserPath::new(MACOS, STABLE),
-                r#"/Applications/Firefox.app/Contents/MacOS/firefox"#,
+                "/Applications/Firefox.app/Contents/MacOS/firefox",
             ),
             (
                 BrowserPath::new(MACOS, BETA),
-                r#"/Applications/Firefox.app/Contents/MacOS/firefox"#,
+                "/Applications/Firefox.app/Contents/MacOS/firefox",
             ),
             (
                 BrowserPath::new(MACOS, DEV),
-                r#"/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox"#,
+                "/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox",
             ),
             (
                 BrowserPath::new(MACOS, NIGHTLY),
-                r#"/Applications/Firefox Nightly.app/Contents/MacOS/firefox"#,
+                "/Applications/Firefox Nightly.app/Contents/MacOS/firefox",
             ),
             (
                 BrowserPath::new(MACOS, ESR),
-                r#"/Applications/Firefox.app/Contents/MacOS/firefox"#,
+                "/Applications/Firefox.app/Contents/MacOS/firefox",
             ),
             (BrowserPath::new(LINUX, STABLE), "/usr/bin/firefox"),
             (BrowserPath::new(LINUX, BETA), "/usr/bin/firefox"),
@@ -216,9 +223,11 @@ impl SeleniumManager for FirefoxManager {
             _ => {
                 self.assert_online_or_err(OFFLINE_REQUEST_ERR_MSG)?;
 
+                let driver_version_url =
+                    self.get_driver_mirror_versions_url_or_default(DRIVER_VERSIONS_URL);
                 let driver_version = match parse_json_from_url::<GeckodriverReleases>(
                     self.get_http_client(),
-                    DRIVER_VERSIONS_URL,
+                    &driver_version_url,
                 ) {
                     Ok(driver_releases) => {
                         let major_browser_version_int =
@@ -361,6 +370,14 @@ impl SeleniumManager for FirefoxManager {
         self.log = log;
     }
 
+    fn get_sender(&self) -> &Sender<String> {
+        &self.tx
+    }
+
+    fn get_receiver(&self) -> &Receiver<String> {
+        &self.rx
+    }
+
     fn get_platform_label(&self) -> &str {
         let driver_version = self.get_driver_version();
         let os = self.get_os();
@@ -461,12 +478,15 @@ impl SeleniumManager for FirefoxManager {
             }
 
             let mut firefox_versions =
-                self.request_versions_from_online(FIREFOX_HISTORY_ENDPOINT)?;
+                self.request_versions_from_online(FIREFOX_HISTORY_MAJOR_ENDPOINT)?;
             if firefox_versions.is_empty() {
-                firefox_versions =
-                    self.request_versions_from_online(FIREFOX_HISTORY_DEV_ENDPOINT)?;
+                firefox_versions = self.request_versions_from_online(FIREFOX_HISTORY_ENDPOINT)?;
                 if firefox_versions.is_empty() {
-                    return self.unavailable_discovery();
+                    firefox_versions =
+                        self.request_versions_from_online(FIREFOX_HISTORY_DEV_ENDPOINT)?;
+                    if firefox_versions.is_empty() {
+                        return self.unavailable_discovery();
+                    }
                 }
             }
 
@@ -555,7 +575,11 @@ impl SeleniumManager for FirefoxManager {
             if X32.is(arch) {
                 platform_label = "linux-i686";
             } else if self.is_nightly(browser_version) {
-                platform_label = "linux64";
+                if ARM64.is(arch) {
+                    platform_label = "linux64-aarch64";
+                } else {
+                    platform_label = "linux64";
+                }
             } else {
                 platform_label = "linux-x86_64";
             }

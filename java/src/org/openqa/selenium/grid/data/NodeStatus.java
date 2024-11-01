@@ -42,6 +42,7 @@ public class NodeStatus {
   private final Set<Slot> slots;
   private final Availability availability;
   private final Duration heartbeatPeriod;
+  private final Duration sessionTimeout;
   private final String version;
   private final Map<String, String> osInfo;
 
@@ -52,6 +53,7 @@ public class NodeStatus {
       Set<Slot> slots,
       Availability availability,
       Duration heartbeatPeriod,
+      Duration sessionTimeout,
       String version,
       Map<String, String> osInfo) {
     this.nodeId = Require.nonNull("Node id", nodeId);
@@ -62,6 +64,7 @@ public class NodeStatus {
     this.slots = unmodifiableSet(new HashSet<>(Require.nonNull("Slots", slots)));
     this.availability = Require.nonNull("Availability", availability);
     this.heartbeatPeriod = heartbeatPeriod;
+    this.sessionTimeout = sessionTimeout;
     this.version = Require.nonNull("Grid Node version", version);
     this.osInfo = Require.nonNull("Node host OS info", osInfo);
   }
@@ -73,6 +76,7 @@ public class NodeStatus {
     Set<Slot> slots = null;
     Availability availability = null;
     Duration heartbeatPeriod = null;
+    Duration sessionTimeout = null;
     String version = null;
     Map<String, String> osInfo = null;
 
@@ -85,6 +89,10 @@ public class NodeStatus {
 
         case "heartbeatPeriod":
           heartbeatPeriod = Duration.ofMillis(input.read(Long.class));
+          break;
+
+        case "sessionTimeout":
+          sessionTimeout = Duration.ofMillis(input.read(Long.class));
           break;
 
         case "nodeId":
@@ -119,7 +127,15 @@ public class NodeStatus {
     input.endObject();
 
     return new NodeStatus(
-        nodeId, externalUri, maxSessions, slots, availability, heartbeatPeriod, version, osInfo);
+        nodeId,
+        externalUri,
+        maxSessions,
+        slots,
+        availability,
+        heartbeatPeriod,
+        sessionTimeout,
+        version,
+        osInfo);
   }
 
   public boolean hasCapability(Capabilities caps, SlotMatcher slotMatcher) {
@@ -162,6 +178,10 @@ public class NodeStatus {
     return heartbeatPeriod;
   }
 
+  public Duration getSessionTimeout() {
+    return sessionTimeout;
+  }
+
   public String getVersion() {
     return version;
   }
@@ -194,6 +214,8 @@ public class NodeStatus {
     return Objects.equals(this.nodeId, that.nodeId)
         && Objects.equals(this.externalUri, that.externalUri)
         && this.maxSessionCount == that.maxSessionCount
+        && this.sessionTimeout.compareTo(that.sessionTimeout) == 0
+        && this.heartbeatPeriod.compareTo(that.heartbeatPeriod) == 0
         && Objects.equals(this.slots, that.slots)
         && Objects.equals(this.availability, that.availability)
         && Objects.equals(this.version, that.version);
@@ -204,7 +226,7 @@ public class NodeStatus {
     return Objects.hash(nodeId, externalUri, maxSessionCount, slots, version);
   }
 
-  private Map<String, Object> toJson() {
+  public Map<String, Object> toJson() {
     Map<String, Object> toReturn = new TreeMap<>();
     toReturn.put("nodeId", nodeId);
     toReturn.put("externalUri", externalUri);
@@ -212,6 +234,7 @@ public class NodeStatus {
     toReturn.put("slots", slots);
     toReturn.put("availability", availability);
     toReturn.put("heartbeatPeriod", heartbeatPeriod.toMillis());
+    toReturn.put("sessionTimeout", sessionTimeout.toMillis());
     toReturn.put("version", version);
     toReturn.put("osInfo", osInfo);
 

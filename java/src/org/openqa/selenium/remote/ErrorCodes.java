@@ -54,6 +54,7 @@ import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.interactions.MoveTargetOutOfBoundsException;
 
 /** Defines common error codes for the wire protocol. */
+@Deprecated(forRemoval = true)
 public class ErrorCodes {
 
   public static final String SUCCESS_STRING = "success";
@@ -172,7 +173,7 @@ public class ErrorCodes {
               405,
               UnsupportedCommandException.class,
               false,
-              true),
+              false),
           new KnownError(
               METHOD_NOT_ALLOWED,
               "unsupported operation",

@@ -87,6 +87,7 @@ module Selenium
           end
           let(:service_manager) { instance_double(ServiceManager, uri: 'http://example.com') }
           let(:bridge) { instance_double(Remote::Bridge, quit: nil, create_session: {}) }
+          let(:finder) { instance_double(DriverFinder, browser_path?: false, driver_path: '/path/to/driver') }
 
           before do
             allow(Remote::Bridge).to receive(:new).and_return(bridge)
@@ -100,9 +101,7 @@ module Selenium
           end
 
           it 'is created when :url is not provided' do
-            allow(DriverFinder).to receive(:path).and_return('path')
-            allow(Platform).to receive(:assert_file)
-            allow(Platform).to receive(:assert_executable)
+            allow(DriverFinder).to receive(:new).and_return(finder)
             allow(described_class).to receive(:new).and_return(service)
 
             driver.new
@@ -111,14 +110,34 @@ module Selenium
           end
 
           it 'accepts :service without creating a new instance' do
-            allow(DriverFinder).to receive(:path).and_return('path')
-            allow(Platform).to receive(:assert_file)
-            allow(Platform).to receive(:assert_executable)
+            allow(DriverFinder).to receive(:new).and_return(finder)
             allow(described_class).to receive(:new)
 
             driver.new(service: service)
 
             expect(described_class).not_to have_received(:new)
+          end
+
+          context 'with a path env variable' do
+            let(:service) { described_class.new }
+            let(:service_path) { "/path/to/#{Service::EXECUTABLE}" }
+
+            before do
+              ENV['SE_GECKODRIVER'] = service_path
+            end
+
+            after { ENV.delete('SE_GECKODRIVER') }
+
+            it 'uses the path from the environment' do
+              expect(service.executable_path).to match(/geckodriver/)
+            end
+
+            it 'updates the path after setting the environment variable' do
+              ENV['SE_GECKODRIVER'] = '/foo/bar'
+              service.executable_path = service_path
+
+              expect(service.executable_path).to match(/geckodriver/)
+            end
           end
         end
       end

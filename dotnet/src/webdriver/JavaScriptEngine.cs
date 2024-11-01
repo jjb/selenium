@@ -16,15 +16,15 @@
 // limitations under the License.
 // </copyright>
 
+using OpenQA.Selenium.DevTools;
+using OpenQA.Selenium.Internal;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using OpenQA.Selenium.DevTools;
-using OpenQA.Selenium.Internal;
 
 namespace OpenQA.Selenium
 {
@@ -380,7 +380,7 @@ namespace OpenQA.Selenium
         {
             if (e.Name == MonitorBindingName)
             {
-                DomMutationData valueChangeData = JsonConvert.DeserializeObject<DomMutationData>(e.Payload);
+                DomMutationData valueChangeData = JsonSerializer.Deserialize<DomMutationData>(e.Payload);
                 var locator = By.CssSelector($"*[data-__webdriver_id='{valueChangeData.TargetId}']");
                 valueChangeData.Element = driver.FindElements(locator).FirstOrDefault();
 

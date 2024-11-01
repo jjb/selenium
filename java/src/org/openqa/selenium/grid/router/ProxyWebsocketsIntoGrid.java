@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openqa.selenium.NoSuchSessionException;
 import org.openqa.selenium.grid.sessionmap.SessionMap;
+import org.openqa.selenium.internal.Require;
 import org.openqa.selenium.remote.HttpSessionId;
 import org.openqa.selenium.remote.SessionId;
 import org.openqa.selenium.remote.http.BinaryMessage;
@@ -53,11 +54,12 @@ public class ProxyWebsocketsIntoGrid
 
   @Override
   public Optional<Consumer<Message>> apply(String uri, Consumer<Message> downstream) {
-    Objects.requireNonNull(uri);
-    Objects.requireNonNull(downstream);
+    Require.nonNull("uri", uri);
+    Require.nonNull("downstream", downstream);
 
     Optional<SessionId> sessionId = HttpSessionId.getSessionId(uri).map(SessionId::new);
-    if (!sessionId.isPresent()) {
+    if (sessionId.isEmpty()) {
+      LOG.warning("Session not found for uri " + uri);
       return Optional.empty();
     }
 
@@ -66,13 +68,31 @@ public class ProxyWebsocketsIntoGrid
 
       HttpClient client =
           clientFactory.createClient(ClientConfig.defaultConfig().baseUri(sessionUri));
-      WebSocket upstream =
-          client.openSocket(new HttpRequest(GET, uri), new ForwardingListener(downstream));
+      try {
+        WebSocket upstream =
+            client.openSocket(new HttpRequest(GET, uri), new ForwardingListener(downstream));
 
-      return Optional.of(upstream::send);
-
+        return Optional.of(
+            (msg) -> {
+              try {
+                upstream.send(msg);
+              } finally {
+                if (msg instanceof CloseMessage) {
+                  try {
+                    client.close();
+                  } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Failed to shutdown the client of " + sessionUri, e);
+                  }
+                }
+              }
+            });
+      } catch (Exception e) {
+        LOG.log(Level.WARNING, "Connecting to upstream websocket failed", e);
+        client.close();
+        return Optional.empty();
+      }
     } catch (NoSuchSessionException e) {
-      LOG.info("Attempt to connect to non-existent session: " + uri);
+      LOG.warning("Attempt to connect to non-existent session: " + uri);
       return Optional.empty();
     }
   }

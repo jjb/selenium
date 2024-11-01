@@ -17,10 +17,8 @@
 // </copyright>
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
 
 namespace OpenQA.Selenium.DevTools
 {
@@ -32,7 +30,8 @@ namespace OpenQA.Selenium.DevTools
         /// <summary>
         /// Gets or sets the browser name, usually expressed as "Browser/Version" (e.g., "Chrome/86.0.0.1234".
         /// </summary>
-        [JsonProperty(PropertyName = "Browser")]
+        [JsonPropertyName("Browser")]
+        [JsonInclude]
         public string Browser { get; internal set; }
 
         /// <summary>
@@ -50,19 +49,22 @@ namespace OpenQA.Selenium.DevTools
         /// <summary>
         /// Gets the version of the Developer Tools Protocol.
         /// </summary>
-        [JsonProperty(PropertyName = "Protocol-Version")]
+        [JsonPropertyName("Protocol-Version")]
+        [JsonInclude]
         public string ProtocolVersion { get; internal set; }
 
         /// <summary>
         /// Gets the user agent string.
         /// </summary>
-        [JsonProperty(PropertyName = "User-Agent")]
+        [JsonPropertyName("User-Agent")]
+        [JsonInclude]
         public string UserAgent { get; internal set; }
 
         /// <summary>
         /// Gets the version string for the V8 script engine in use by this version of the browser.
         /// </summary>
-        [JsonProperty(PropertyName = "V8-Version")]
+        [JsonPropertyName("V8-Version")]
+        [JsonInclude]
         public string V8Version
         {
             get;
@@ -72,7 +74,8 @@ namespace OpenQA.Selenium.DevTools
         /// <summary>
         /// Gets the URL for the WebSocket connection used for communicating via the DevTools Protocol.
         /// </summary>
-        [JsonProperty(PropertyName = "webSocketDebuggerUrl")]
+        [JsonPropertyName("webSocketDebuggerUrl")]
+        [JsonInclude]
         public string WebSocketDebuggerUrl { get; internal set; }
 
         /// <summary>
@@ -98,7 +101,8 @@ namespace OpenQA.Selenium.DevTools
         /// <summary>
         /// Gets the version string for the version of WebKit used to build this version of the browser.
         /// </summary>
-        [JsonProperty(PropertyName = "WebKit-Version")]
+        [JsonPropertyName("WebKit-Version")]
+        [JsonInclude]
         public string WebKitVersion { get; internal set; }
 
         /// <summary>

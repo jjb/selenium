@@ -70,6 +70,9 @@ rb_gem_build(
         ":notice",
     ],
     gemspec = "selenium-webdriver.gemspec",
+    tags = [
+        "release-artifact",
+    ],
     deps = [
         "//rb/lib:selenium-webdriver",
         "//rb/lib/selenium:server",
@@ -105,6 +108,9 @@ rb_gem_build(
         ":notice",
     ],
     gemspec = "selenium-devtools.gemspec",
+    tags = [
+        "release-artifact",
+    ],
     deps = ["//rb/lib/selenium:devtools"],
 )
 
@@ -163,7 +169,7 @@ rb_binary(
         "--readme=rb/README.md",
         "rb/",
     ],
-    main = "@bundle//:bin/yard",
+    main = "@bundle//bin:yard",
     deps = [
         ":selenium-devtools",
         ":selenium-webdriver",
@@ -178,9 +184,13 @@ rb_test(
         "--autocorrect",
         "--config=rb/.rubocop.yml",
         "rb/",
+        "Rakefile",
     ],
-    data = [".rubocop.yml"],
-    main = "@bundle//:bin/rubocop",
+    data = [
+        ".rubocop.yml",
+        "//:rakefile",
+    ],
+    main = "@bundle//bin:rubocop",
     tags = ["no-sandbox"],
     deps = [
         ":selenium-devtools",
@@ -199,7 +209,7 @@ rb_binary(
         "-rselenium/devtools",
         "-Irb/lib",
     ],
-    main = "@bundle//:bin/irb",
+    main = "@bundle//bin:irb",
     deps = [
         ":selenium-devtools",
         ":selenium-webdriver",

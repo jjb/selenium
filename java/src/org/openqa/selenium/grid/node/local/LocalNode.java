@@ -59,6 +59,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -127,6 +128,7 @@ public class LocalNode extends Node {
   private final int configuredSessionCount;
   private final boolean cdpEnabled;
   private final boolean managedDownloadsEnabled;
+  private final int connectionLimitPerSession;
 
   private final boolean bidiEnabled;
   private final AtomicBoolean drainAfterSessions = new AtomicBoolean();
@@ -153,8 +155,14 @@ public class LocalNode extends Node {
       Duration heartbeatPeriod,
       List<SessionSlot> factories,
       Secret registrationSecret,
-      boolean managedDownloadsEnabled) {
-    super(tracer, new NodeId(UUID.randomUUID()), uri, registrationSecret);
+      boolean managedDownloadsEnabled,
+      int connectionLimitPerSession) {
+    super(
+        tracer,
+        new NodeId(UUID.randomUUID()),
+        uri,
+        registrationSecret,
+        Require.positive(sessionTimeout));
 
     this.bus = Require.nonNull("Event bus", bus);
 
@@ -171,6 +179,7 @@ public class LocalNode extends Node {
     this.cdpEnabled = cdpEnabled;
     this.bidiEnabled = bidiEnabled;
     this.managedDownloadsEnabled = managedDownloadsEnabled;
+    this.connectionLimitPerSession = connectionLimitPerSession;
 
     this.healthCheck =
         healthCheck == null
@@ -292,7 +301,13 @@ public class LocalNode extends Node {
         heartbeatPeriod.getSeconds(),
         TimeUnit.SECONDS);
 
-    Runtime.getRuntime().addShutdownHook(new Thread(this::stopAllSessions));
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  stopAllSessions();
+                  drain();
+                }));
     new JMXHelper().register(this);
   }
 
@@ -311,7 +326,6 @@ public class LocalNode extends Node {
       }
       // Attempt to stop the session
       slot.stop();
-      this.sessionToDownloadsDir.invalidate(id);
       // Decrement pending sessions if Node is draining
       if (this.isDraining()) {
         int done = pendingSessions.decrementAndGet();
@@ -468,8 +482,6 @@ public class LocalNode extends Node {
         sessionToDownloadsDir.put(session.getId(), uuidForSessionDownloads);
         currentSessions.put(session.getId(), slotToUse);
 
-        checkSessionCount();
-
         SessionId sessionId = session.getId();
         Capabilities caps = session.getCapabilities();
         SESSION_ID.accept(span, sessionId);
@@ -508,6 +520,8 @@ public class LocalNode extends Node {
         span.addEvent("Unable to create session with the driver", attributeMap);
         return Either.left(possibleSession.left());
       }
+    } finally {
+      checkSessionCount();
     }
   }
 
@@ -567,6 +581,24 @@ public class LocalNode extends Node {
   public boolean isSessionOwner(SessionId id) {
     Require.nonNull("Session ID", id);
     return currentSessions.getIfPresent(id) != null;
+  }
+
+  @Override
+  public boolean tryAcquireConnection(SessionId id) throws NoSuchSessionException {
+    SessionSlot slot = currentSessions.getIfPresent(id);
+
+    if (slot == null) {
+      return false;
+    }
+
+    if (connectionLimitPerSession == -1) {
+      // no limit
+      return true;
+    }
+
+    AtomicLong counter = slot.getConnectionCounter();
+
+    return connectionLimitPerSession > counter.getAndIncrement();
   }
 
   @Override
@@ -760,6 +792,10 @@ public class LocalNode extends Node {
   public void stop(SessionId id) throws NoSuchSessionException {
     Require.nonNull("Session ID", id);
 
+    if (sessionToDownloadsDir.getIfPresent(id) != null) {
+      sessionToDownloadsDir.invalidate(id);
+    }
+
     SessionSlot slot = currentSessions.getIfPresent(id);
     if (slot == null) {
       throw new NoSuchSessionException("Cannot find session with id: " + id);
@@ -805,20 +841,34 @@ public class LocalNode extends Node {
     }
 
     // Check if the user wants to use BiDi
-    boolean webSocketUrl = toUse.asMap().containsKey("webSocketUrl");
-    // Add se:bidi if necessary to send the bidi url back
-    boolean bidiSupported = isSupportingBiDi || toUse.getCapability("se:bidi") != null;
-    if (bidiSupported && bidiEnabled && webSocketUrl) {
+    // This will be null if the user has not set the capability.
+    Object webSocketUrl = toUse.getCapability("webSocketUrl");
+
+    // In case of Firefox versions that do not support webSocketUrl, it returns the capability as it
+    // is i.e. boolean value. So need to check if it is a string.
+    // Check if the Node supports BiDi and if the client wants to use BiDi.
+    boolean bidiSupported = isSupportingBiDi && (webSocketUrl instanceof String);
+    if (bidiSupported && bidiEnabled) {
+      String biDiUrl = (String) other.getCapabilities().getCapability("webSocketUrl");
+      URI uri = null;
+      try {
+        uri = new URI(biDiUrl);
+      } catch (URISyntaxException e) {
+        throw new IllegalArgumentException("Unable to create URI from " + uri);
+      }
       String bidiPath = String.format("/session/%s/se/bidi", other.getId());
-      toUse = new PersistentCapabilities(toUse).setCapability("se:bidi", rewrite(bidiPath));
+      toUse =
+          new PersistentCapabilities(toUse)
+              .setCapability("se:gridWebSocketUrl", uri)
+              .setCapability("webSocketUrl", rewrite(bidiPath));
     } else {
-      // Remove any se:bidi* from the response, BiDi is not supported nor enabled
+      // Remove any "webSocketUrl" from the response, BiDi is not supported nor enabled
       MutableCapabilities bidiFiltered = new MutableCapabilities();
       toUse
           .asMap()
           .forEach(
               (key, value) -> {
-                if (!key.startsWith("se:bidi")) {
+                if (!key.startsWith("webSocketUrl")) {
                   bidiFiltered.setCapability(key, value);
                 }
               });
@@ -838,9 +888,7 @@ public class LocalNode extends Node {
   private URI rewrite(String path) {
     try {
       String scheme = "https".equals(gridUri.getScheme()) ? "wss" : "ws";
-      if (gridUri.getPath() != null && !gridUri.getPath().isEmpty()) {
-        path = gridUri.getPath() + path;
-      }
+      path = NodeOptions.normalizeSubPath(gridUri.getPath()) + path;
       return new URI(
           scheme, gridUri.getUserInfo(), gridUri.getHost(), gridUri.getPort(), path, null, null);
     } catch (URISyntaxException e) {
@@ -894,6 +942,7 @@ public class LocalNode extends Node {
         slots,
         availability,
         heartbeatPeriod,
+        getSessionTimeout(),
         getNodeVersion(),
         getOsInfo());
   }
@@ -960,6 +1009,7 @@ public class LocalNode extends Node {
     private HealthCheck healthCheck;
     private Duration heartbeatPeriod = Duration.ofSeconds(NodeOptions.DEFAULT_HEARTBEAT_PERIOD);
     private boolean managedDownloadsEnabled = false;
+    private int connectionLimitPerSession = -1;
 
     private Builder(Tracer tracer, EventBus bus, URI uri, URI gridUri, Secret registrationSecret) {
       this.tracer = Require.nonNull("Tracer", tracer);
@@ -1014,6 +1064,11 @@ public class LocalNode extends Node {
       return this;
     }
 
+    public Builder connectionLimitPerSession(int connectionLimitPerSession) {
+      this.connectionLimitPerSession = connectionLimitPerSession;
+      return this;
+    }
+
     public LocalNode build() {
       return new LocalNode(
           tracer,
@@ -1030,7 +1085,8 @@ public class LocalNode extends Node {
           heartbeatPeriod,
           factories.build(),
           registrationSecret,
-          managedDownloadsEnabled);
+          managedDownloadsEnabled,
+          connectionLimitPerSession);
     }
 
     public Advanced advanced() {

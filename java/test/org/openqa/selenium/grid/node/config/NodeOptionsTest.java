@@ -368,7 +368,7 @@ class NodeOptionsTest {
   void driversCanBeConfigured() {
     String chromeLocation =
         "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta";
-    String firefoxLocation = "/Applications/Firefox Nightly.app/Contents/MacOS/firefox-bin";
+    String firefoxLocation = "/Applications/Firefox Nightly.app/Contents/MacOS/firefox";
     ChromeOptions chromeOptions = new ChromeOptions();
     chromeOptions.setBinary(chromeLocation);
     FirefoxOptions firefoxOptions = new FirefoxOptions();
@@ -436,7 +436,7 @@ class NodeOptionsTest {
   @Test
   void driversCanBeConfiguredWithASpecificWebDriverBinary() {
     String chLocation = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta";
-    String ffLocation = "/Applications/Firefox Nightly.app/Contents/MacOS/firefox-bin";
+    String ffLocation = "/Applications/Firefox Nightly.app/Contents/MacOS/firefox";
     String chromeDriverLocation = "/path/to/chromedriver_beta/chromedriver";
     String geckoDriverLocation = "/path/to/geckodriver_nightly/geckodriver";
     ChromeOptions chromeOptions = new ChromeOptions();
@@ -674,6 +674,28 @@ class NodeOptionsTest {
   }
 
   @Test
+  void settingSubPathForNodeServerExtractFromGridUrl() {
+    String[] rawConfig =
+        new String[] {
+          "[node]", "grid-url = \"http://localhost:4444/mySubPath\"",
+        };
+    Config config = new TomlConfig(new StringReader(String.join("\n", rawConfig)));
+    NodeOptions nodeOptions = new NodeOptions(config);
+    assertThat(nodeOptions.getGridSubPath()).isEqualTo("/mySubPath");
+  }
+
+  @Test
+  void settingSubPathForNodeServerExtractFromHub() {
+    String[] rawConfig =
+        new String[] {
+          "[node]", "hub = \"http://0.0.0.0:4444/mySubPath\"",
+        };
+    Config config = new TomlConfig(new StringReader(String.join("\n", rawConfig)));
+    NodeOptions nodeOptions = new NodeOptions(config);
+    assertThat(nodeOptions.getGridSubPath()).isEqualTo("/mySubPath");
+  }
+
+  @Test
   void notSettingSlotMatcherAvailable() {
     String[] rawConfig =
         new String[] {
@@ -695,6 +717,50 @@ class NodeOptionsTest {
 
     NodeOptions nodeOptions = new NodeOptions(config);
     assertThat(nodeOptions.getSlotMatcher()).isExactlyInstanceOf(YesSlotMatcher.class);
+  }
+
+  @Test
+  void testIsVncEnabledAcceptListEnvVarsAndReturnTrue() {
+    System.setProperty("SE_START_XVFB", "true");
+    System.setProperty("SE_START_VNC", "true");
+    System.setProperty("SE_START_NO_VNC", "true");
+    String[] rawConfig =
+        new String[] {
+          "[node]", "vnc-env-var = [\"SE_START_XVFB\", \"SE_START_VNC\", \"SE_START_NO_VNC\"]",
+        };
+    Config config = new TomlConfig(new StringReader(String.join("\n", rawConfig)));
+    NodeOptions nodeOptionsEnabled = new NodeOptions(config);
+    assertThat(config.getAll("node", "vnc-env-var").get())
+        .containsExactly("SE_START_XVFB", "SE_START_VNC", "SE_START_NO_VNC");
+    assertThat(nodeOptionsEnabled.isVncEnabled()).isTrue();
+  }
+
+  @Test
+  void testIsVncEnabledAcceptListEnvVarsAndReturnFalse() {
+    System.setProperty("SE_START_XVFB", "true");
+    System.setProperty("SE_START_VNC", "false");
+    String[] rawConfig =
+        new String[] {
+          "[node]", "vnc-env-var = [\"SE_START_XVFB\", \"SE_START_VNC\", \"SE_START_NO_VNC\"]",
+        };
+    Config config = new TomlConfig(new StringReader(String.join("\n", rawConfig)));
+    NodeOptions nodeOptionsEnabled = new NodeOptions(config);
+    assertThat(config.getAll("node", "vnc-env-var").get())
+        .containsExactly("SE_START_XVFB", "SE_START_VNC", "SE_START_NO_VNC");
+    assertThat(nodeOptionsEnabled.isVncEnabled()).isFalse();
+  }
+
+  @Test
+  void testIsVncEnabledAcceptSingleEnvVar() {
+    System.setProperty("SE_START_XVFB", "false");
+    String[] rawConfig =
+        new String[] {
+          "[node]", "vnc-env-var = \"SE_START_XVFB\"",
+        };
+    Config config = new TomlConfig(new StringReader(String.join("\n", rawConfig)));
+    NodeOptions nodeOptionsEnabled = new NodeOptions(config);
+    assertThat(config.getAll("node", "vnc-env-var").get()).containsExactly("SE_START_XVFB");
+    assertThat(nodeOptionsEnabled.isVncEnabled()).isFalse();
   }
 
   private Condition<? super List<? extends Capabilities>> supporting(String name) {

@@ -42,6 +42,7 @@ pub const CACHE_PATH_KEY: &str = "cache-path";
 
 pub struct ManagerConfig {
     pub cache_path: String,
+    pub fallback_driver_from_cache: bool,
     pub browser_version: String,
     pub driver_version: String,
     pub browser_path: String,
@@ -55,6 +56,11 @@ pub struct ManagerConfig {
     pub offline: bool,
     pub force_browser_download: bool,
     pub avoid_browser_download: bool,
+    pub language_binding: String,
+    pub selenium_version: String,
+    pub avoid_stats: bool,
+    pub skip_driver_in_path: bool,
+    pub skip_browser_in_path: bool,
 }
 
 impl ManagerConfig {
@@ -94,6 +100,7 @@ impl ManagerConfig {
 
         ManagerConfig {
             cache_path,
+            fallback_driver_from_cache: true,
             browser_version: StringKey(vec!["browser-version", &browser_version_label], "")
                 .get_value(),
             driver_version: StringKey(vec!["driver-version", &driver_version_label], "")
@@ -111,6 +118,11 @@ impl ManagerConfig {
             offline: BooleanKey("offline", false).get_value(),
             force_browser_download: BooleanKey("force-browser-download", false).get_value(),
             avoid_browser_download: BooleanKey("avoid-browser-download", false).get_value(),
+            language_binding: StringKey(vec!["language-binding"], "").get_value(),
+            selenium_version: StringKey(vec!["selenium-version"], "").get_value(),
+            avoid_stats: BooleanKey("avoid-stats", false).get_value(),
+            skip_driver_in_path: BooleanKey("skip-driver-in-path", false).get_value(),
+            skip_browser_in_path: BooleanKey("skip-browser-in-path", false).get_value(),
         }
     }
 }

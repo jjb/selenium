@@ -16,10 +16,10 @@
 // limitations under the License.
 // </copyright>
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using Newtonsoft.Json;
 using OpenQA.Selenium.Internal;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace OpenQA.Selenium
 {
@@ -31,6 +31,12 @@ namespace OpenQA.Selenium
         private SessionId commandSessionId;
         private string commandName;
         private Dictionary<string, object> commandParameters = new Dictionary<string, object>();
+
+        private readonly static JsonSerializerOptions s_jsonSerializerOptions = new()
+        {
+            TypeInfoResolver = CommandJsonSerializerContext.Default,
+            Converters = { new ResponseValueJsonConverter() }
+        };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Command"/> class using a command name and a JSON-encoded string for the parameters.
@@ -62,7 +68,7 @@ namespace OpenQA.Selenium
         /// <summary>
         /// Gets the SessionID of the command
         /// </summary>
-        [JsonProperty("sessionId")]
+        [JsonPropertyName("sessionId")]
         public SessionId SessionId
         {
             get { return this.commandSessionId; }
@@ -71,7 +77,7 @@ namespace OpenQA.Selenium
         /// <summary>
         /// Gets the command name
         /// </summary>
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name
         {
             get { return this.commandName; }
@@ -80,7 +86,7 @@ namespace OpenQA.Selenium
         /// <summary>
         /// Gets the parameters of the command
         /// </summary>
-        [JsonProperty("parameters")]
+        [JsonPropertyName("parameters")]
         public Dictionary<string, object> Parameters
         {
             get { return this.commandParameters; }
@@ -96,7 +102,7 @@ namespace OpenQA.Selenium
                 string parametersString = string.Empty;
                 if (this.commandParameters != null && this.commandParameters.Count > 0)
                 {
-                    parametersString = JsonConvert.SerializeObject(this.commandParameters);
+                    parametersString = JsonSerializer.Serialize(this.commandParameters, s_jsonSerializerOptions);
                 }
 
                 if (string.IsNullOrEmpty(parametersString))
@@ -124,8 +130,39 @@ namespace OpenQA.Selenium
         /// <returns>A <see cref="Dictionary{K, V}"/> with a string keys, and an object value. </returns>
         private static Dictionary<string, object> ConvertParametersFromJson(string value)
         {
-            Dictionary<string, object> parameters = JsonConvert.DeserializeObject<Dictionary<string, object>>(value, new ResponseValueJsonConverter());
+            Dictionary<string, object> parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(value, s_jsonSerializerOptions);
             return parameters;
         }
+    }
+
+    // Built-in types
+    [JsonSerializable(typeof(bool))]
+    [JsonSerializable(typeof(byte))]
+    [JsonSerializable(typeof(sbyte))]
+    [JsonSerializable(typeof(char))]
+    [JsonSerializable(typeof(decimal))]
+    [JsonSerializable(typeof(double))]
+    [JsonSerializable(typeof(float))]
+    [JsonSerializable(typeof(int))]
+    [JsonSerializable(typeof(uint))]
+    [JsonSerializable(typeof(nint))]
+    [JsonSerializable(typeof(nuint))]
+    [JsonSerializable(typeof(long))]
+    [JsonSerializable(typeof(ulong))]
+    [JsonSerializable(typeof(short))]
+    [JsonSerializable(typeof(ushort))]
+
+    [JsonSerializable(typeof(string))]
+
+    // Selenium WebDriver types
+    [JsonSerializable(typeof(char[]))]
+    [JsonSerializable(typeof(byte[]))]
+    [JsonSerializable(typeof(Dictionary<string, object>))]
+    [JsonSerializable(typeof(Cookie))]
+    [JsonSerializable(typeof(ReturnedCookie))]
+    [JsonSerializable(typeof(Proxy))]
+    internal partial class CommandJsonSerializerContext : JsonSerializerContext
+    {
+
     }
 }
