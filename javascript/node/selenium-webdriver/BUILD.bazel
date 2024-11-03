@@ -11,13 +11,13 @@ load("//javascript/private:browsers.bzl", "BROWSERS")
 
 npm_link_all_packages(name = "node_modules")
 
-VERSION = "4.25.0-nightly202408281539"
+VERSION = "4.27.0-nightly202410301443"
 
 BROWSER_VERSIONS = [
     "v85",
     "v128",
-    "v126",
-    "v127",
+    "v129",
+    "v130",
 ]
 
 js_library(
@@ -63,6 +63,7 @@ npm_package(
         "//javascript/node/selenium-webdriver/lib/atoms:mutation-listener",
     ],
     package = "selenium-webdriver",
+    publishable = True,
     tags = [
         "release-artifact",
     ],
