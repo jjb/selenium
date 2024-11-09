@@ -49,6 +49,28 @@ Changelog = "https://github.com/SeleniumHQ/selenium/blob/trunk/py/CHANGES"
 Documentation = "https://www.selenium.dev/documentation/overview/"
 SourceCode = "https://github.com/SeleniumHQ/selenium/tree/trunk/py"
 
+[tool.setuptools.packages.find]
+include = ["selenium*"]
+exclude = ["test*"]
+namespaces = false
+# include-package-data is `true` by default in pyproject.toml
+
+[tool.setuptools.package-data]
+selenium_package = [
+    "*.py", 
+    "*.rst",
+    "*.json", 
+    "*.xpi", 
+    "*.js",
+    "py.typed",
+    "prune*",
+    "selenium.egg-info*",
+    "selenium-manager", 
+    "selenium-manager.exe",
+    "CHANGES",
+    "LICENSE"
+]
+
 [tool.pytest.ini_options]
 console_output_style = "progress"
 faulthandler_timeout = 60
