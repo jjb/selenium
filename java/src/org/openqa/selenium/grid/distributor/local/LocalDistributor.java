@@ -18,6 +18,7 @@
 package org.openqa.selenium.grid.distributor.local;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static org.openqa.selenium.concurrent.ExecutorServices.shutdownGracefully;
 import static org.openqa.selenium.grid.data.Availability.DOWN;
 import static org.openqa.selenium.grid.data.Availability.DRAINING;
 import static org.openqa.selenium.grid.data.Availability.UP;
@@ -34,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
+import java.io.Closeable;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
@@ -45,7 +47,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -118,7 +119,7 @@ import org.openqa.selenium.status.HasReadyState;
 @ManagedService(
     objectName = "org.seleniumhq.grid:type=Distributor,name=LocalDistributor",
     description = "Grid 4 node distributor")
-public class LocalDistributor extends Distributor implements AutoCloseable {
+public class LocalDistributor extends Distributor implements Closeable {
 
   private static final Logger LOG = Logger.getLogger(LocalDistributor.class.getName());
 
@@ -165,7 +166,7 @@ public class LocalDistributor extends Distributor implements AutoCloseable {
             return thread;
           });
 
-  private final Executor sessionCreatorExecutor;
+  private final ExecutorService sessionCreatorExecutor;
 
   private final NewSessionQueue sessionQueue;
 
@@ -752,9 +753,10 @@ public class LocalDistributor extends Distributor implements AutoCloseable {
   @Override
   public void close() {
     LOG.info("Shutting down Distributor executor service");
-    purgeDeadNodesService.shutdown();
-    nodeHealthCheckService.shutdown();
-    newSessionService.shutdown();
+    shutdownGracefully("Local Distributor - Purge Dead Nodes", purgeDeadNodesService);
+    shutdownGracefully("Local Distributor - Node Health Check", nodeHealthCheckService);
+    shutdownGracefully("Local Distributor - New Session Queue", newSessionService);
+    shutdownGracefully("Local Distributor - Session Creation", sessionCreatorExecutor);
   }
 
   private class NewSessionRunnable implements Runnable {

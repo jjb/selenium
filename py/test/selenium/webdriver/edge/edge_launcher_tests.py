@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # Licensed to the Software Freedom Conservancy (SFC) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,26 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-module Selenium
-  module WebDriver
-    class BiDi
-      class Struct < ::Struct
-        class << self
-          def new(*args, &block)
-            super(*args) do
-              define_method(:initialize) do |**kwargs|
-                converted_kwargs = kwargs.transform_keys { |key| self.class.camel_to_snake(key.to_s).to_sym }
-                super(*converted_kwargs.values_at(*self.class.members))
-              end
-              class_eval(&block) if block
-            end
-          end
+import pytest
 
-          def camel_to_snake(camel_str)
-            camel_str.gsub(/([A-Z])/, '_\1').downcase
-          end
-        end
-      end
-    end # BiDi
-  end # WebDriver
-end # Selenium
+
+@pytest.mark.no_driver_after_test
+def test_launch_and_close_browser(clean_driver, clean_service):
+    driver = clean_driver(service=clean_service)
+    driver.quit()
+
+
+@pytest.mark.no_driver_after_test
+def test_we_can_launch_multiple_edge_instances(clean_driver, clean_service):
+    driver1 = clean_driver(service=clean_service)
+    driver2 = clean_driver(service=clean_service)
+    driver3 = clean_driver(service=clean_service)
+    driver1.quit()
+    driver2.quit()
+    driver3.quit()

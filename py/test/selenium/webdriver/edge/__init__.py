@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # Licensed to the Software Freedom Conservancy (SFC) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,27 +14,3 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-module Selenium
-  module WebDriver
-    class BiDi
-      class Struct < ::Struct
-        class << self
-          def new(*args, &block)
-            super(*args) do
-              define_method(:initialize) do |**kwargs|
-                converted_kwargs = kwargs.transform_keys { |key| self.class.camel_to_snake(key.to_s).to_sym }
-                super(*converted_kwargs.values_at(*self.class.members))
-              end
-              class_eval(&block) if block
-            end
-          end
-
-          def camel_to_snake(camel_str)
-            camel_str.gsub(/([A-Z])/, '_\1').downcase
-          end
-        end
-      end
-    end # BiDi
-  end # WebDriver
-end # Selenium
