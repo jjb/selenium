@@ -234,7 +234,9 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
       }
 
       Lock writeLock = this.lock.writeLock();
-      writeLock.lock();
+      if (!writeLock.tryLock()) {
+        writeLock.lock();
+      }
       try {
         requests.remove(request.getRequestId());
         queue.remove(request);
@@ -268,7 +270,9 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
     Data data = new Data(request.getEnqueued());
 
     Lock writeLock = lock.writeLock();
-    writeLock.lock();
+    if (!writeLock.tryLock()) {
+      writeLock.lock();
+    }
     try {
       requests.put(request.getRequestId(), data);
       queue.addLast(request);
@@ -288,7 +292,9 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
         contexts.getOrDefault(request.getRequestId(), tracer.getCurrentContext());
     try (Span ignored = context.createSpan("sessionqueue.retry")) {
       Lock writeLock = lock.writeLock();
-      writeLock.lock();
+      if (!writeLock.tryLock()) {
+        writeLock.lock();
+      }
       try {
         if (!requests.containsKey(request.getRequestId())) {
           return false;
@@ -319,7 +325,9 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
     Require.nonNull("Request ID", reqId);
 
     Lock writeLock = lock.writeLock();
-    writeLock.lock();
+    if (!writeLock.tryLock()) {
+      writeLock.lock();
+    }
     try {
       Iterator<SessionRequest> iterator = queue.iterator();
       while (iterator.hasNext()) {
@@ -340,6 +348,28 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
   public List<SessionRequest> getNextAvailable(Map<Capabilities, Long> stereotypes) {
     Require.nonNull("Stereotypes", stereotypes);
 
+    // delay the response to avoid heavy polling via http
+    long started = System.currentTimeMillis();
+    while (8000 > System.currentTimeMillis() - started) {
+      Lock readLock = lock.readLock();
+      readLock.lock();
+
+      try {
+        if (!queue.isEmpty()) {
+          break;
+        }
+      } finally {
+        readLock.unlock();
+      }
+
+      try {
+        Thread.sleep(10);
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+
     Predicate<Capabilities> matchesStereotype =
         caps ->
             stereotypes.entrySet().stream()
@@ -355,7 +385,9 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
                     });
 
     Lock writeLock = lock.writeLock();
-    writeLock.lock();
+    if (!writeLock.tryLock()) {
+      writeLock.lock();
+    }
     try {
       List<SessionRequest> availableRequests =
           queue.stream()
@@ -381,7 +413,9 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
     try (Span ignored = context.createSpan("sessionqueue.completed")) {
       Data data;
       Lock writeLock = lock.writeLock();
-      writeLock.lock();
+      if (!writeLock.tryLock()) {
+        writeLock.lock();
+      }
       try {
         data = requests.remove(reqId);
         queue.removeIf(req -> reqId.equals(req.getRequestId()));
@@ -401,7 +435,9 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
   @Override
   public int clearQueue() {
     Lock writeLock = lock.writeLock();
-    writeLock.lock();
+    if (!writeLock.tryLock()) {
+      writeLock.lock();
+    }
 
     try {
       int size = queue.size();
