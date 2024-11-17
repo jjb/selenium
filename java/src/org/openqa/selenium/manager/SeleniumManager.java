@@ -194,7 +194,11 @@ public class SeleniumManager {
         } else if (current.is(MAC)) {
           folder = "macos";
         } else if (current.is(LINUX)) {
-          folder = "linux";
+          if (System.getProperty("os.arch").contains("arm")) {
+            throw new WebDriverException("Linux ARM is not supported by Selenium Manager");
+          } else {
+            folder = "linux";
+          }
         } else if (current.is(UNIX)) {
           LOG.warning(
               String.format(
@@ -209,7 +213,7 @@ public class SeleniumManager {
         if (!binary.toFile().exists()) {
           String binaryPathInJar = String.format("%s/%s%s", folder, SELENIUM_MANAGER, extension);
           try (InputStream inputStream = this.getClass().getResourceAsStream(binaryPathInJar)) {
-            binary.getParent().toFile().mkdirs();
+            Files.createDirectories(binary.getParent());
             Files.copy(inputStream, binary);
           }
         }

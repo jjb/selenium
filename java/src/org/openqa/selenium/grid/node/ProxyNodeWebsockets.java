@@ -94,6 +94,13 @@ public class ProxyNodeWebsockets
       return Optional.empty();
     }
 
+    // ensure one session does not open to many connections, this might have a negative impact on
+    // the grid health
+    if (!node.tryAcquireConnection(id)) {
+      LOG.warning("Too many websocket connections initiated by " + id);
+      return Optional.empty();
+    }
+
     Session session = node.getSession(id);
     Capabilities caps = session.getCapabilities();
     LOG.fine("Scanning for endpoint: " + caps);
@@ -226,11 +233,30 @@ public class ProxyNodeWebsockets
     LOG.info("Establishing connection to " + uri);
 
     HttpClient client = clientFactory.createClient(ClientConfig.defaultConfig().baseUri(uri));
-    WebSocket upstream =
-        client.openSocket(
-            new HttpRequest(GET, uri.toString()),
-            new ForwardingListener(downstream, sessionConsumer, sessionId));
-    return upstream::send;
+    try {
+      WebSocket upstream =
+          client.openSocket(
+              new HttpRequest(GET, uri.toString()),
+              new ForwardingListener(downstream, sessionConsumer, sessionId));
+
+      return (msg) -> {
+        try {
+          upstream.send(msg);
+        } finally {
+          if (msg instanceof CloseMessage) {
+            try {
+              client.close();
+            } catch (Exception e) {
+              LOG.log(Level.WARNING, "Failed to shutdown the client of " + uri, e);
+            }
+          }
+        }
+      };
+    } catch (Exception e) {
+      LOG.log(Level.WARNING, "Connecting to upstream websocket failed", e);
+      client.close();
+      throw e;
+    }
   }
 
   private static class ForwardingListener implements WebSocket.Listener {
