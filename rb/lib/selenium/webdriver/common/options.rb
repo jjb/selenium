@@ -71,6 +71,8 @@ module Selenium
       def initialize(**opts)
         self.class.set_capabilities
 
+        opts[:web_socket_url] = opts.delete(:bidi) if opts.key?(:bidi)
+
         @options = opts
         @options[:browser_name] = self.class::BROWSER
       end
