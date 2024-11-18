@@ -293,9 +293,16 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
         if (!requests.containsKey(request.getRequestId())) {
           return false;
         }
-        if (isTimedOut(Instant.now(), requests.get(request.getRequestId()))) {
+        Data data = requests.get(request.getRequestId());
+        if (isTimedOut(Instant.now(), data)) {
           // as we try to re-add a session request that has already expired, force session timeout
           failDueToTimeout(request.getRequestId());
+          // return true to avoid handleNewSessionRequest to call 'complete' an other time
+          return true;
+        } else if (data.isCanceled()) {
+          complete(
+              request.getRequestId(),
+              Either.left(new SessionNotCreatedException("Client has gone away")));
           // return true to avoid handleNewSessionRequest to call 'complete' an other time
           return true;
         }
@@ -470,6 +477,10 @@ public class LocalNewSessionQueue extends NewSessionQueue implements Closeable {
 
     public synchronized void cancel() {
       canceled = true;
+    }
+
+    public synchronized boolean isCanceled() {
+      return canceled;
     }
 
     public synchronized boolean setResult(
