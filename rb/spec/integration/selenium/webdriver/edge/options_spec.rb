@@ -65,11 +65,11 @@ module Selenium
         it 'enables BiDi on initialization' do
           quit_driver
 
-          options = Selenium::WebDriver::Options.chrome(bidi: true)
+          options = Selenium::WebDriver::Options.edge(bidi: true)
           expect(options.web_socket_url).to be true
           expect(options.bidi?).to be true
 
-          driver = Selenium::WebDriver.for :chrome, options: options
+          driver = Selenium::WebDriver.for :edge, options: options
 
           expect(driver.capabilities.web_socket_url).to be_a String
 
