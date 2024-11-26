@@ -92,9 +92,8 @@ class Select:
 
         throws NoSuchElementException If there is no option with specified index in SELECT
         """
-        match = str(index)
         for opt in self.options:
-            if opt.get_dom_attribute("index") == match:
+            if opt.get_property("index") == index:
                 self._set_selected(opt)
                 return
         raise NoSuchElementException(f"Could not locate element with index {index}")
@@ -182,7 +181,7 @@ class Select:
         if not self.is_multiple:
             raise NotImplementedError("You may only deselect options of a multi-select")
         for opt in self.options:
-            if opt.get_dom_attribute("index") == str(index):
+            if opt.get_property("index") == index:
                 self._unset_selected(opt)
                 return
         raise NoSuchElementException(f"Could not locate element with index {index}")
