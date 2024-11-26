@@ -25,7 +25,7 @@ def test_writable_text_input_should_clear(driver, pages):
     pages.load("readOnlyPage.html")
     element = driver.find_element(By.ID, "writableTextInput")
     element.clear()
-    assert "" == element.get_attribute("value")
+    assert "" == element.get_property("value")
 
 
 @pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
@@ -49,7 +49,7 @@ def test_writable_text_area_should_clear(driver, pages):
     pages.load("readOnlyPage.html")
     element = driver.find_element(By.ID, "writableTextArea")
     element.clear()
-    assert "" == element.get_attribute("value")
+    assert "" == element.get_property("value")
 
 
 @pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")

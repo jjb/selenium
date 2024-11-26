@@ -27,19 +27,19 @@ from selenium.webdriver.common.by import By
 def test_should_be_able_to_find_asingle_element_by_id(driver, pages):
     pages.load("xhtmlTest.html")
     element = driver.find_element(By.ID, "linkId")
-    assert element.get_attribute("id") == "linkId"
+    assert element.get_dom_attribute("id") == "linkId"
 
 
 def test_should_be_able_to_find_asingle_element_by_numeric_id(driver, pages):
     pages.load("nestedElements.html")
     element = driver.find_element(By.ID, "2")
-    assert element.get_attribute("id") == "2"
+    assert element.get_dom_attribute("id") == "2"
 
 
 def test_should_be_able_to_find_an_element_with_css_escape(driver, pages):
     pages.load("idElements.html")
     element = driver.find_element(By.ID, "with.dots")
-    assert element.get_attribute("id") == "with.dots"
+    assert element.get_dom_attribute("id") == "with.dots"
 
 
 def test_should_be_able_to_find_multiple_elements_by_id(driver, pages):
@@ -106,7 +106,7 @@ def test_no_such_element_error(driver, pages):
 def test_should_be_able_to_find_asingle_element_by_name(driver, pages):
     pages.load("formPage.html")
     element = driver.find_element(By.NAME, "checky")
-    assert element.get_attribute("value") == "furrfu"
+    assert element.get_property("value") == "furrfu"
 
 
 def test_should_be_able_to_find_multiple_elements_by_name(driver, pages):
@@ -118,7 +118,7 @@ def test_should_be_able_to_find_multiple_elements_by_name(driver, pages):
 def test_should_be_able_to_find_an_element_that_does_not_support_the_name_property(driver, pages):
     pages.load("nestedElements.html")
     element = driver.find_element(By.NAME, "div1")
-    assert element.get_attribute("name") == "div1"
+    assert element.get_dom_attribute("name") == "div1"
 
 
 # By.name negative
@@ -356,7 +356,7 @@ def test_should_be_able_to_find_an_element_by_xpath_with_multiple_attributes(dri
     pages.load("formPage.html")
     element = driver.find_element(By.XPATH, "//form[@name='optional']/input[@type='submit' and @value='Click!']")
     assert element.tag_name.lower() == "input"
-    assert element.get_attribute("value") == "Click!"
+    assert element.get_property("value") == "Click!"
 
 
 def test_finding_alink_by_xpath_should_locate_an_element_with_the_given_text(driver, pages):
@@ -489,7 +489,7 @@ def test_should_be_able_to_find_asingle_element_by_css_selector(driver, pages):
     pages.load("xhtmlTest.html")
     element = driver.find_element(By.CSS_SELECTOR, "div.content")
     assert element.tag_name.lower() == "div"
-    assert element.get_attribute("class") == "content"
+    assert element.get_dom_attribute("class") == "content"
 
 
 def test_should_be_able_to_find_multiple_elements_by_css_selector(driver, pages):
@@ -502,33 +502,33 @@ def test_should_be_able_to_find_asingle_element_by_compound_css_selector(driver,
     pages.load("xhtmlTest.html")
     element = driver.find_element(By.CSS_SELECTOR, "div.extraDiv, div.content")
     assert element.tag_name.lower() == "div"
-    assert element.get_attribute("class") == "content"
+    assert element.get_dom_attribute("class") == "content"
 
 
 def test_should_be_able_to_find_multiple_elements_by_compound_css_selector(driver, pages):
     pages.load("xhtmlTest.html")
     elements = driver.find_elements(By.CSS_SELECTOR, "div.extraDiv, div.content")
     assert len(elements) > 1
-    assert elements[0].get_attribute("class") == "content"
-    assert elements[1].get_attribute("class") == "extraDiv"
+    assert elements[0].get_dom_attribute("class") == "content"
+    assert elements[1].get_dom_attribute("class") == "extraDiv"
 
 
 def test_should_be_able_to_find_an_element_by_boolean_attribute_using_css_selector(driver, pages):
     pages.load("locators_tests/boolean_attribute_selected.html")
     element = driver.find_element(By.CSS_SELECTOR, "option[selected='selected']")
-    assert element.get_attribute("value") == "two"
+    assert element.get_property("value") == "two"
 
 
 def test_should_be_able_to_find_an_element_by_boolean_attribute_using_short_css_selector(driver, pages):
     pages.load("locators_tests/boolean_attribute_selected.html")
     element = driver.find_element(By.CSS_SELECTOR, "option[selected]")
-    assert element.get_attribute("value") == "two"
+    assert element.get_property("value") == "two"
 
 
 def test_should_be_able_to_find_an_element_by_boolean_attribute_using_short_css_selector_on_html_4_page(driver, pages):
     pages.load("locators_tests/boolean_attribute_selected_html4.html")
     element = driver.find_element(By.CSS_SELECTOR, "option[selected]")
-    assert element.get_attribute("value") == "two"
+    assert element.get_property("value") == "two"
 
 
 # By.css_Selector negative
@@ -600,14 +600,14 @@ def test_should_be_able_to_find_multiple_links_by_text(driver, pages):
 def test_should_find_element_by_link_text_containing_equals_sign(driver, pages):
     pages.load("xhtmlTest.html")
     element = driver.find_element(By.LINK_TEXT, "Link=equalssign")
-    assert element.get_attribute("id") == "linkWithEqualsSign"
+    assert element.get_dom_attribute("id") == "linkWithEqualsSign"
 
 
 def test_should_find_multiple_elements_by_link_text_containing_equals_sign(driver, pages):
     pages.load("xhtmlTest.html")
     elements = driver.find_elements(By.LINK_TEXT, "Link=equalssign")
     assert 1 == len(elements)
-    assert elements[0].get_attribute("id") == "linkWithEqualsSign"
+    assert elements[0].get_dom_attribute("id") == "linkWithEqualsSign"
 
 
 def test_finds_by_link_text_on_xhtml_page(driver, pages):
@@ -629,7 +629,7 @@ def test_link_with_formatting_tags(driver, pages):
 def test_driver_can_get_link_by_link_test_ignoring_trailing_whitespace(driver, pages):
     pages.load("simpleTest.html")
     link = driver.find_element(By.LINK_TEXT, "link with trailing space")
-    assert link.get_attribute("id") == "linkWithTrailingSpace"
+    assert link.get_dom_attribute("id") == "linkWithTrailingSpace"
     assert link.text == "link with trailing space"
 
 
@@ -666,14 +666,14 @@ def test_should_be_able_to_find_asingle_element_by_partial_link_text(driver, pag
 def test_should_find_element_by_partial_link_text_containing_equals_sign(driver, pages):
     pages.load("xhtmlTest.html")
     element = driver.find_element(By.PARTIAL_LINK_TEXT, "Link=")
-    assert element.get_attribute("id") == "linkWithEqualsSign"
+    assert element.get_dom_attribute("id") == "linkWithEqualsSign"
 
 
 def test_should_find_multiple_elements_by_partial_link_text_containing_equals_sign(driver, pages):
     pages.load("xhtmlTest.html")
     elements = driver.find_elements(By.PARTIAL_LINK_TEXT, "Link=")
     assert len(elements) == 1
-    assert elements[0].get_attribute("id") == "linkWithEqualsSign"
+    assert elements[0].get_dom_attribute("id") == "linkWithEqualsSign"
 
 
 # Misc tests
@@ -693,22 +693,22 @@ def test_when_finding_by_name_should_not_return_by_id(driver, pages):
     pages.load("formPage.html")
 
     element = driver.find_element(By.NAME, "id-name1")
-    assert element.get_attribute("value") == "name"
+    assert element.get_property("value") == "name"
 
     element = driver.find_element(By.ID, "id-name1")
-    assert element.get_attribute("value") == "id"
+    assert element.get_property("value") == "id"
 
     element = driver.find_element(By.NAME, "id-name2")
-    assert element.get_attribute("value") == "name"
+    assert element.get_property("value") == "name"
 
     element = driver.find_element(By.ID, "id-name2")
-    assert element.get_attribute("value") == "id"
+    assert element.get_property("value") == "id"
 
 
 def test_should_be_able_to_find_ahidden_elements_by_name(driver, pages):
     pages.load("formPage.html")
     element = driver.find_element(By.NAME, "hidden")
-    assert element.get_attribute("name") == "hidden"
+    assert element.get_dom_attribute("name") == "hidden"
 
 
 def test_should_not_be_able_to_find_an_element_on_a_blank_page(driver, pages):

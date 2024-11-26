@@ -218,7 +218,7 @@ def test_expected_condition_text_to_be_present_in_element_value(driver, pages):
         "setTimeout(function(){document.getElementById('inputRequired').value = 'Example Expected text'}, 200)"
     )
     WebDriverWait(driver, 2).until(EC.text_to_be_present_in_element_value((By.ID, "inputRequired"), "Expected"))
-    assert "Example Expected text" == driver.find_element(By.ID, "inputRequired").get_attribute("value")
+    assert "Example Expected text" == driver.find_element(By.ID, "inputRequired").get_property("value")
 
 
 def test_expected_condition_text_to_be_present_in_element_attribute(driver, pages):
@@ -233,7 +233,7 @@ def test_expected_condition_text_to_be_present_in_element_attribute(driver, page
     WebDriverWait(driver, 2).until(
         EC.text_to_be_present_in_element_attribute((By.ID, "inputRequired"), "value", "Expected")
     )
-    assert "Example Expected text" == driver.find_element(By.ID, "inputRequired").get_attribute("value")
+    assert "Example Expected text" == driver.find_element(By.ID, "inputRequired").get_property("value")
 
 
 def test_expected_condition_frame_to_be_available_and_switch_to_it_by_locator(driver, pages):

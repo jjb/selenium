@@ -103,7 +103,7 @@ def test_should_not_be_able_to_type_an_element_that_is_not_displayed(driver, pag
         assert 1 == 0, "should have thrown an exception"
     except (ElementNotVisibleException, ElementNotInteractableException):
         pass
-    assert element.get_attribute("value") != "You don't see me"
+    assert element.get_property("value") != "You don't see me"
 
 
 def test_should_say_elements_with_negative_transform_are_not_displayed(driver, pages):

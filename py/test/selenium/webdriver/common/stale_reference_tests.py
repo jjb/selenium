@@ -45,4 +45,4 @@ def test_should_not_crash_when_querying_the_attribute_of_astale_element(driver, 
     heading = driver.find_element(by=By.XPATH, value="//h1")
     pages.load("simpleTest.html")
     with pytest.raises(StaleElementReferenceException):
-        heading.get_attribute("class")
+        heading.get_dom_attribute("class")

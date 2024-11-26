@@ -26,7 +26,7 @@ def test_should_find_element_by_xpath(driver, pages):
     pages.load("nestedElements.html")
     element = driver.find_element(By.NAME, "form2")
     child = element.find_element(By.XPATH, "select")
-    assert child.get_attribute("id") == "2"
+    assert child.get_dom_attribute("id") == "2"
 
 
 def test_should_not_find_element_by_xpath(driver, pages):
@@ -72,7 +72,7 @@ def test_should_find_element_by_name(driver, pages):
     pages.load("nestedElements.html")
     element = driver.find_element(By.NAME, "form2")
     child = element.find_element(By.NAME, "selectomatic")
-    assert child.get_attribute("id") == "2"
+    assert child.get_dom_attribute("id") == "2"
 
 
 def test_should_find_elements_by_name(driver, pages):
@@ -86,7 +86,7 @@ def test_should_find_element_by_id(driver, pages):
     pages.load("nestedElements.html")
     element = driver.find_element(By.NAME, "form2")
     child = element.find_element(By.ID, "2")
-    assert child.get_attribute("name") == "selectomatic"
+    assert child.get_dom_attribute("name") == "selectomatic"
 
 
 def test_should_find_elements_by_id(driver, pages):
@@ -114,7 +114,7 @@ def test_should_find_element_by_link_text(driver, pages):
     pages.load("nestedElements.html")
     element = driver.find_element(By.NAME, "div1")
     child = element.find_element(By.LINK_TEXT, "hello world")
-    assert child.get_attribute("name") == "link1"
+    assert child.get_dom_attribute("name") == "link1"
 
 
 def test_should_find_elements_by_link_text(driver, pages):
@@ -122,8 +122,8 @@ def test_should_find_elements_by_link_text(driver, pages):
     element = driver.find_element(By.NAME, "div1")
     children = element.find_elements(By.LINK_TEXT, "hello world")
     assert len(children) == 2
-    assert "link1" == children[0].get_attribute("name")
-    assert "link2" == children[1].get_attribute("name")
+    assert "link1" == children[0].get_dom_attribute("name")
+    assert "link2" == children[1].get_dom_attribute("name")
 
 
 def test_should_find_element_by_class_name(driver, pages):
@@ -144,7 +144,7 @@ def test_should_find_element_by_tag_name(driver, pages):
     pages.load("nestedElements.html")
     parent = driver.find_element(By.NAME, "div1")
     element = parent.find_element(By.TAG_NAME, "a")
-    assert "link1" == element.get_attribute("name")
+    assert "link1" == element.get_dom_attribute("name")
 
 
 def test_should_find_elements_by_tag_name(driver, pages):
@@ -158,7 +158,7 @@ def test_should_be_able_to_find_an_element_by_css_selector(driver, pages):
     pages.load("nestedElements.html")
     parent = driver.find_element(By.NAME, "form2")
     element = parent.find_element(By.CSS_SELECTOR, '*[name="selectomatic"]')
-    assert "2" == element.get_attribute("id")
+    assert "2" == element.get_dom_attribute("id")
 
 
 def test_should_be_able_to_find_multiple_elements_by_css_selector(driver, pages):

@@ -74,19 +74,19 @@ def test_should_be_able_to_switch_to_aframe_by_its_index(driver, pages):
 def test_should_be_able_to_switch_to_an_iframe_by_its_index(driver, pages):
     pages.load("iframes.html")
     driver.switch_to.frame(0)
-    assert driver.find_element(By.NAME, "id-name1").get_attribute("value") == "name"
+    assert driver.find_element(By.NAME, "id-name1").get_property("value") == "name"
 
 
 def test_should_be_able_to_switch_to_aframe_by_its_name(driver, pages):
     pages.load("frameset.html")
     driver.switch_to.frame("fourth")
-    assert driver.find_element(By.TAG_NAME, "frame").get_attribute("name") == "child1"
+    assert driver.find_element(By.TAG_NAME, "frame").get_dom_attribute("name") == "child1"
 
 
 def test_should_be_able_to_switch_to_an_iframe_by_its_name(driver, pages):
     pages.load("iframes.html")
     driver.switch_to.frame("iframe1-name")
-    assert driver.find_element(By.NAME, "id-name1").get_attribute("value") == "name"
+    assert driver.find_element(By.NAME, "id-name1").get_property("value") == "name"
 
 
 def test_should_be_able_to_switch_to_aframe_by_its_id(driver, pages):
@@ -98,7 +98,7 @@ def test_should_be_able_to_switch_to_aframe_by_its_id(driver, pages):
 def test_should_be_able_to_switch_to_an_iframe_by_its_id(driver, pages):
     pages.load("iframes.html")
     driver.switch_to.frame("iframe1")
-    assert driver.find_element(By.NAME, "id-name1").get_attribute("value") == "name"
+    assert driver.find_element(By.NAME, "id-name1").get_property("value") == "name"
 
 
 def test_should_be_able_to_switch_to_frame_with_name_containing_dot(driver, pages):
@@ -120,7 +120,7 @@ def test_should_be_able_to_switch_to_an_iframe_using_apreviously_located_web_ele
     driver.switch_to.frame(frame)
 
     element = driver.find_element(By.NAME, "id-name1")
-    assert element.get_attribute("value") == "name"
+    assert element.get_property("value") == "name"
 
 
 def test_should_ensure_element_is_aframe_before_switching(driver, pages):

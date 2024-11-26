@@ -120,7 +120,7 @@ def test_should_be_able_to_set_more_than_one_line_of_text_in_atext_area(driver, 
 
     textarea.send_keys(expectedText)
 
-    seenText = textarea.get_attribute("value")
+    seenText = textarea.get_property("value")
     assert seenText == expectedText
 
 
@@ -129,7 +129,7 @@ def test_should_be_able_to_enter_dates_after_filling_in_other_values_first(drive
     input_ = driver.find_element(by=By.ID, value="working")
     expectedValue = "10/03/2007 to 30/07/1993"
     input_.send_keys(expectedValue)
-    seenValue = input_.get_attribute("value")
+    seenValue = input_.get_property("value")
 
     assert seenValue == expectedValue
 

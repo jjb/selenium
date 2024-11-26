@@ -259,7 +259,7 @@ def text_to_be_present_in_element_value(
 
     def _predicate(driver: WebDriverOrWebElement):
         try:
-            element_text = driver.find_element(*locator).get_attribute("value")
+            element_text = driver.find_element(*locator).get_property("value")
             return text_ in element_text
         except StaleElementReferenceException:
             return False
@@ -278,7 +278,7 @@ def text_to_be_present_in_element_attribute(
 
     def _predicate(driver: WebDriverOrWebElement):
         try:
-            element_text = driver.find_element(*locator).get_attribute(attribute_)
+            element_text = driver.find_element(*locator).get_dom_attribute(attribute_)
             if element_text is None:
                 return False
             return text_ in element_text
@@ -483,7 +483,7 @@ def element_attribute_to_include(locator: Tuple[str, str], attribute_: str) -> C
 
     def _predicate(driver: WebDriverOrWebElement):
         try:
-            element_attribute = driver.find_element(*locator).get_attribute(attribute_)
+            element_attribute = driver.find_element(*locator).get_dom_attribute(attribute_)
             return element_attribute is not None
         except StaleElementReferenceException:
             return False

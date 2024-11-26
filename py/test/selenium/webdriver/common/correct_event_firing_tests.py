@@ -99,7 +99,7 @@ def test_should_emit_click_event_when_clicking_on_atext_input_element(driver, pa
     clicker = driver.find_element(By.ID, "clickField")
     clicker.click()
 
-    assert clicker.get_attribute("value") == "Clicked"
+    assert clicker.get_property("value") == "Clicked"
 
 
 @pytest.mark.xfail_safari

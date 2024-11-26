@@ -157,7 +157,7 @@ def test_should_be_able_to_execute_asynchronous_scripts(driver, pages):
 
     typer = driver.find_element(by=By.NAME, value="typer")
     typer.send_keys("bob")
-    assert "bob" == typer.get_attribute("value")
+    assert "bob" == typer.get_property("value")
 
     driver.find_element(by=By.ID, value="red").click()
     driver.find_element(by=By.NAME, value="submit").click()
@@ -171,7 +171,7 @@ def test_should_be_able_to_execute_asynchronous_scripts(driver, pages):
         window.registerListener(arguments[arguments.length - 1]);"""
     )
     assert "bob" == text
-    assert "" == typer.get_attribute("value")
+    assert "" == typer.get_property("value")
 
     assert 2 == len(
         driver.find_elements(by=By.TAG_NAME, value="div")

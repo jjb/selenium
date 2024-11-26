@@ -28,7 +28,7 @@ def test_should_be_able_to_find_first_one(driver, pages):
 
     el = driver.find_element(with_tag_name("p").above(lowest))
 
-    assert el.get_attribute("id") == "mid"
+    assert el.get_dom_attribute("id") == "mid"
 
 
 def test_should_be_able_to_find_first_one_by_locator(driver, pages):
@@ -36,7 +36,7 @@ def test_should_be_able_to_find_first_one_by_locator(driver, pages):
 
     el = driver.find_element(with_tag_name("p").above({By.ID: "below"}))
 
-    assert el.get_attribute("id") == "mid"
+    assert el.get_dom_attribute("id") == "mid"
 
 
 def test_should_be_able_to_find_elements_above_another(driver, pages):
@@ -45,7 +45,7 @@ def test_should_be_able_to_find_elements_above_another(driver, pages):
 
     elements = driver.find_elements(with_tag_name("p").above(lowest))
 
-    ids = [el.get_attribute("id") for el in elements]
+    ids = [el.get_dom_attribute("id") for el in elements]
     assert "above" in ids
     assert "mid" in ids
 
@@ -55,7 +55,7 @@ def test_should_be_able_to_find_elements_above_another_by_locator(driver, pages)
 
     elements = driver.find_elements(with_tag_name("p").above({By.ID: "below"}))
 
-    ids = [el.get_attribute("id") for el in elements]
+    ids = [el.get_dom_attribute("id") for el in elements]
     assert "above" in ids
     assert "mid" in ids
 
@@ -69,7 +69,7 @@ def test_should_be_able_to_combine_filters(driver, pages):
         .to_right_of(driver.find_element(By.ID, "second"))
     )
 
-    ids = [el.get_attribute("id") for el in elements]
+    ids = [el.get_dom_attribute("id") for el in elements]
     assert "third" in ids
 
 
@@ -78,7 +78,7 @@ def test_should_be_able_to_combine_filters_by_locator(driver, pages):
 
     elements = driver.find_elements(with_tag_name("td").above({By.ID: "center"}).to_right_of({By.ID: "second"}))
 
-    ids = [el.get_attribute("id") for el in elements]
+    ids = [el.get_dom_attribute("id") for el in elements]
     assert "third" in ids
 
 
@@ -91,7 +91,7 @@ def test_should_be_able_to_use_css_selectors(driver, pages):
         .to_right_of(driver.find_element(By.ID, "second"))
     )
 
-    ids = [el.get_attribute("id") for el in elements]
+    ids = [el.get_dom_attribute("id") for el in elements]
     assert "third" in ids
 
 
@@ -102,7 +102,7 @@ def test_should_be_able_to_use_css_selectors_by_locator(driver, pages):
         locate_with(By.CSS_SELECTOR, "td").above({By.ID: "center"}).to_right_of({By.ID: "second"})
     )
 
-    ids = [el.get_attribute("id") for el in elements]
+    ids = [el.get_dom_attribute("id") for el in elements]
     assert "third" in ids
 
 
@@ -115,7 +115,7 @@ def test_should_be_able_to_use_xpath(driver, pages):
         .above(driver.find_element(By.ID, "seventh"))
     )
 
-    ids = [el.get_attribute("id") for el in elements]
+    ids = [el.get_dom_attribute("id") for el in elements]
     assert "fourth" in ids
 
 
@@ -124,7 +124,7 @@ def test_should_be_able_to_use_xpath_by_locator(driver, pages):
 
     elements = driver.find_elements(locate_with(By.XPATH, "//td[1]").below({By.ID: "second"}).above({By.ID: "seventh"}))
 
-    ids = [el.get_attribute("id") for el in elements]
+    ids = [el.get_dom_attribute("id") for el in elements]
     assert "fourth" in ids
 
 
@@ -149,7 +149,7 @@ def test_near_locator_should_find_near_elements(driver, pages):
 
     el = driver.find_element(locate_with(By.ID, "rect2").near(rect1))
 
-    assert el.get_attribute("id") == "rect2"
+    assert el.get_dom_attribute("id") == "rect2"
 
 
 def test_near_locator_should_find_near_elements_by_locator(driver, pages):
@@ -157,7 +157,7 @@ def test_near_locator_should_find_near_elements_by_locator(driver, pages):
 
     el = driver.find_element(locate_with(By.ID, "rect2").near({By.ID: "rect1"}))
 
-    assert el.get_attribute("id") == "rect2"
+    assert el.get_dom_attribute("id") == "rect2"
 
 
 def test_near_locator_should_not_find_far_elements(driver, pages):
@@ -185,7 +185,7 @@ def test_near_locator_should_find_far_elements(driver, pages):
 
     el = driver.find_element(locate_with(By.ID, "rect4").near(rect3, 100))
 
-    assert el.get_attribute("id") == "rect4"
+    assert el.get_dom_attribute("id") == "rect4"
 
 
 def test_near_locator_should_find_far_elements_by_locator(driver, pages):
@@ -193,4 +193,4 @@ def test_near_locator_should_find_far_elements_by_locator(driver, pages):
 
     el = driver.find_element(locate_with(By.ID, "rect4").near({By.ID: "rect3"}, 100))
 
-    assert el.get_attribute("id") == "rect4"
+    assert el.get_dom_attribute("id") == "rect4"

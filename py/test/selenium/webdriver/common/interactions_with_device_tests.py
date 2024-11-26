@@ -79,7 +79,7 @@ def test_double_click_with_pointer(driver, pages):
 
     dblClick = ActionChains(driver, devices=[mouse]).double_click(toDoubleClick)
     dblClick.perform()
-    assert "DoubleClicked" == toDoubleClick.get_attribute("value")
+    assert "DoubleClicked" == toDoubleClick.get_property("value")
 
 
 def test_context_click_with_pointer(driver, pages):
@@ -91,7 +91,7 @@ def test_context_click_with_pointer(driver, pages):
 
     contextClick = ActionChains(driver, devices=[mouse]).context_click(toContextClick)
     contextClick.perform()
-    assert "ContextClicked" == toContextClick.get_attribute("value")
+    assert "ContextClicked" == toContextClick.get_property("value")
 
 
 def test_move_and_click_with_pointer(driver, pages):
@@ -103,7 +103,7 @@ def test_move_and_click_with_pointer(driver, pages):
 
     click = ActionChains(driver, devices=[mouse]).move_to_element(toClick).click()
     click.perform()
-    assert "Clicked" == toClick.get_attribute("value")
+    assert "Clicked" == toClick.get_property("value")
 
 
 def test_cannot_move_to_anull_locator_with_pointer(driver, pages):
@@ -179,7 +179,7 @@ def test_sending_keys_to_active_element_with_modifier_with_keyboard(driver, page
 
     ActionChains(driver, devices=[key_board]).key_down(Keys.SHIFT).send_keys("abc").key_up(Keys.SHIFT).perform()
 
-    assert "ABC" == e.get_attribute("value")
+    assert "ABC" == e.get_property("value")
 
 
 def test_sending_keys_to_element_with_keyboard(driver, pages):
@@ -190,7 +190,7 @@ def test_sending_keys_to_element_with_keyboard(driver, pages):
 
     ActionChains(driver, devices=[key_board]).send_keys_to_element(e, "abc").perform()
 
-    assert "abc" == e.get_attribute("value")
+    assert "abc" == e.get_property("value")
 
 
 def test_can_send_keys_between_clicks_with_keyboard(driver, pages):
@@ -206,7 +206,7 @@ def test_can_send_keys_between_clicks_with_keyboard(driver, pages):
 
     ActionChains(driver, devices=[key_board]).click(keyup).send_keys("foobar").click(keydown).perform()
 
-    assert "foobar" == keyup.get_attribute("value")
+    assert "foobar" == keyup.get_property("value")
 
 
 def test_can_reset_interactions_with_devices(driver):
@@ -241,8 +241,8 @@ def test_can_pause_with_pointer(driver, pages):
     end = time()
 
     assert pause_time < end - start
-    assert "Clicked" == toClick.get_attribute("value")
-    assert "Clicked" == toDoubleClick.get_attribute("value")
+    assert "Clicked" == toClick.get_property("value")
+    assert "Clicked" == toDoubleClick.get_property("value")
 
 
 @pytest.mark.xfail_firefox

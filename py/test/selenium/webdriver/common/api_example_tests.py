@@ -53,7 +53,7 @@ def test_find_elements_by_xpath(driver, pages):
     pages.load("nestedElements.html")
     elems = driver.find_elements(By.XPATH, "//option")
     assert 48 == len(elems)
-    assert "One" == elems[0].get_attribute("value")
+    assert "One" == elems[0].get_property("value")
 
 
 def test_find_elements_by_name(driver, pages):
@@ -66,28 +66,28 @@ def test_find_elements_by_name_in_element_context(driver, pages):
     pages.load("nestedElements.html")
     elem = driver.find_element(By.NAME, "form2")
     sub_elem = elem.find_element(By.NAME, "selectomatic")
-    assert "2" == sub_elem.get_attribute("id")
+    assert "2" == sub_elem.get_dom_attribute("id")
 
 
 def test_find_elements_by_link_text_in_element_context(driver, pages):
     pages.load("nestedElements.html")
     elem = driver.find_element(By.NAME, "div1")
     sub_elem = elem.find_element(By.LINK_TEXT, "hello world")
-    assert "link1" == sub_elem.get_attribute("name")
+    assert "link1" == sub_elem.get_dom_attribute("name")
 
 
 def test_find_element_by_id_in_element_context(driver, pages):
     pages.load("nestedElements.html")
     elem = driver.find_element(By.NAME, "form2")
     sub_elem = elem.find_element(By.ID, "2")
-    assert "selectomatic" == sub_elem.get_attribute("name")
+    assert "selectomatic" == sub_elem.get_dom_attribute("name")
 
 
 def test_find_element_by_xpath_in_element_context(driver, pages):
     pages.load("nestedElements.html")
     elem = driver.find_element(By.NAME, "form2")
     sub_elem = elem.find_element(By.XPATH, "select")
-    assert "2" == sub_elem.get_attribute("id")
+    assert "2" == sub_elem.get_dom_attribute("id")
 
 
 def test_find_element_by_xpath_in_element_context_not_found(driver, pages):
@@ -103,7 +103,7 @@ def test_should_be_able_to_enter_data_into_form_fields(driver, pages):
     elem.clear()
     elem.send_keys("some text")
     elem = driver.find_element(By.XPATH, "//form[@name='someForm']/input[@id='username']")
-    assert "some text" == elem.get_attribute("value")
+    assert "some text" == elem.get_property("value")
 
 
 def test_find_element_by_tag_name(driver, pages):
@@ -164,7 +164,7 @@ def test_get_attribute(driver, pages):
     url = pages.url("xhtmlTest.html")
     driver.get(url)
     elem = driver.find_element(By.ID, "id1")
-    attr = elem.get_attribute("href")
+    attr = elem.get_property("href")
     assert f"{url}#" == attr
 
 
@@ -173,7 +173,7 @@ def test_get_implicit_attribute(driver, pages):
     elems = driver.find_elements(By.XPATH, "//option")
     assert len(elems) >= 3
     for i, elem in enumerate(elems[:3]):
-        assert i == int(elem.get_attribute("index"))
+        assert i == int(elem.get_property("index"))
 
 
 def test_get_dom_attribute(driver, pages):

@@ -86,12 +86,12 @@ def test_can_select_elements_in_opt_group(driver, pages):
 def test_can_get_value_from_option_via_attribute_when_attribute_doesnt_exist(driver, pages):
     pages.load("formPage.html")
     element = driver.find_element(By.CSS_SELECTOR, "select[name='select-default'] option")
-    assert element.get_attribute("value") == "One"
+    assert element.get_property("value") == "One"
     element = driver.find_element(By.ID, "blankOption")
-    assert element.get_attribute("value") == ""
+    assert element.get_property("value") == ""
 
 
 def test_can_get_value_from_option_via_attribute_when_attribute_is_empty_string(driver, pages):
     pages.load("formPage.html")
     element = driver.find_element(By.ID, "optionEmptyValueSet")
-    assert element.get_attribute("value") == ""
+    assert element.get_property("value") == ""

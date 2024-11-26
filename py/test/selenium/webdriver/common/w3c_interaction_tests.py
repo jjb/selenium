@@ -48,7 +48,7 @@ def test_sending_keys_to_active_element_with_modifier(driver, pages):
 
     actions.perform()
 
-    assert "ABC" == e.get_attribute("value")
+    assert "ABC" == e.get_property("value")
 
 
 @pytest.mark.xfail_firefox
@@ -106,7 +106,7 @@ def test_move_and_click(driver, pages):
     pointer.move_to(toClick).click()
 
     actions.perform()
-    assert "Clicked" == toClick.get_attribute("value")
+    assert "Clicked" == toClick.get_property("value")
 
 
 def test_drag_and_drop(driver, pages):
@@ -141,7 +141,7 @@ def test_context_click(driver, pages):
     pointer.context_click(toContextClick)
 
     actions.perform()
-    assert "ContextClicked" == toContextClick.get_attribute("value")
+    assert "ContextClicked" == toContextClick.get_property("value")
 
 
 @pytest.mark.xfail_firefox
@@ -159,7 +159,7 @@ def test_double_click(driver, pages):
     pointer.double_click(toDoubleClick)
 
     actions.perform()
-    assert "DoubleClicked" == toDoubleClick.get_attribute("value")
+    assert "DoubleClicked" == toDoubleClick.get_property("value")
 
 
 def test_dragging_element_with_mouse_moves_it_to_another_list(driver, pages):

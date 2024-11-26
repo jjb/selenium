@@ -106,12 +106,12 @@ def test_should_fire_change_value_event(driver, log, pages):
     ef_driver.get(pages.url("readOnlyPage.html"))
     element = ef_driver.find_element(By.ID, "writableTextInput")
     element.clear()
-    assert "" == element.get_attribute("value")
+    assert "" == element.get_property("value")
 
     ef_driver.get(pages.url("javascriptPage.html"))
     keyReporter = ef_driver.find_element(by=By.ID, value="keyReporter")
     keyReporter.send_keys("abc def")
-    assert keyReporter.get_attribute("value") == "abc def"
+    assert keyReporter.get_property("value") == "abc def"
 
     assert (
         b"before_change_value_of" b"after_change_value_of" b"before_change_value_of" b"after_change_value_of"
@@ -138,7 +138,7 @@ def test_should_fire_find_event(driver, log, pages):
     elements = ef_driver.find_elements(By.CSS_SELECTOR, "frame#sixth")
     assert 1 == len(elements)
     assert "frame" == elements[0].tag_name.lower()
-    assert "sixth" == elements[0].get_attribute("id")
+    assert "sixth" == elements[0].get_dom_attribute("id")
 
     assert (
         b"before_find by id oneline"
@@ -178,7 +178,7 @@ def test_should_unwrap_element_args_when_switching_frames(driver, log, pages):
     ef_driver.get(pages.url("iframes.html"))
     frame = ef_driver.find_element(By.ID, "iframe1")
     ef_driver.switch_to.frame(frame)
-    assert "click me!" == ef_driver.find_element(By.ID, "imageButton").get_attribute("alt")
+    assert "click me!" == ef_driver.find_element(By.ID, "imageButton").get_dom_attribute("alt")
 
 
 def test_should_be_able_to_access_wrapped_instance_from_event_calls(driver):
@@ -196,7 +196,7 @@ def test_using_kwargs(driver, pages):
     ef_driver.get(pages.url("javascriptPage.html"))
     ef_driver.get_cookie(name="cookie_name")
     element = ef_driver.find_element(By.ID, "plainButton")
-    element.get_attribute(name="id")
+    element.get_dom_attribute(name="id")
 
 
 def test_missing_attributes_raise_error(driver, pages):
@@ -222,7 +222,7 @@ def test_can_use_pointer_input_with_event_firing_webdriver(driver, pages):
     pointer.move_to(to_click).click()
     actions.perform()
 
-    assert to_click.get_attribute("value") == "Clicked"
+    assert to_click.get_property("value") == "Clicked"
 
 
 @pytest.mark.xfail_safari

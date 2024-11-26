@@ -81,20 +81,20 @@ def test_should_be_able_to_enter_text_into_atext_area_by_setting_its_value(drive
     textarea = driver.find_element(By.ID, "keyUpArea")
     cheesey = "Brie and cheddar"
     textarea.send_keys(cheesey)
-    assert textarea.get_attribute("value") == cheesey
+    assert textarea.get_property("value") == cheesey
 
 
 def test_should_enter_data_into_form_fields(driver, pages):
     pages.load("xhtmlTest.html")
     element = driver.find_element(By.XPATH, "//form[@name='someForm']/input[@id='username']")
-    originalValue = element.get_attribute("value")
+    originalValue = element.get_property("value")
     assert originalValue == "change"
 
     element.clear()
     element.send_keys("some text")
 
     element = driver.find_element(By.XPATH, "//form[@name='someForm']/input[@id='username']")
-    newFormValue = element.get_attribute("value")
+    newFormValue = element.get_property("value")
     assert newFormValue == "some text"
 
 
@@ -178,11 +178,11 @@ def test_sending_keyboard_events_should_append_text_in_inputs(driver, pages):
     pages.load("formPage.html")
     element = driver.find_element(By.ID, "working")
     element.send_keys("Some")
-    value = element.get_attribute("value")
+    value = element.get_property("value")
     assert value == "Some"
 
     element.send_keys(" text")
-    value = element.get_attribute("value")
+    value = element.get_property("value")
     assert value == "Some text"
 
 
@@ -190,32 +190,32 @@ def test_should_be_able_to_clear_text_from_input_elements(driver, pages):
     pages.load("formPage.html")
     element = driver.find_element(By.ID, "working")
     element.send_keys("Some text")
-    value = element.get_attribute("value")
+    value = element.get_property("value")
     assert len(value) > 0
 
     element.clear()
-    value = element.get_attribute("value")
+    value = element.get_property("value")
     assert len(value) == 0
 
 
 def test_empty_text_boxes_should_return_an_empty_string_not_null(driver, pages):
     pages.load("formPage.html")
     emptyTextBox = driver.find_element(By.ID, "working")
-    assert emptyTextBox.get_attribute("value") == ""
+    assert emptyTextBox.get_property("value") == ""
 
     emptyTextArea = driver.find_element(By.ID, "emptyTextArea")
-    assert emptyTextArea.get_attribute("value") == ""
+    assert emptyTextArea.get_property("value") == ""
 
 
 def test_should_be_able_to_clear_text_from_text_areas(driver, pages):
     pages.load("formPage.html")
     element = driver.find_element(By.ID, "withText")
     element.send_keys("Some text")
-    value = element.get_attribute("value")
+    value = element.get_property("value")
     assert len(value) > 0
 
     element.clear()
-    value = element.get_attribute("value")
+    value = element.get_property("value")
     assert len(value) == 0
 
 
