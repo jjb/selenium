@@ -50,6 +50,8 @@ public class DefaultSlotMatcher implements SlotMatcher, Serializable {
   */
   private static final List<String> EXTENSION_CAPABILITIES_PREFIXES =
       Arrays.asList("goog:", "moz:", "ms:", "se:");
+  private static final List<String> BROWSER_CAPABILITIES =
+      Arrays.asList("platformName", "browserName", "browserVersion");
 
   @Override
   public boolean matches(Capabilities stereotype, Capabilities capabilities) {
@@ -95,8 +97,8 @@ public class DefaultSlotMatcher implements SlotMatcher, Serializable {
     return stereotype.getCapabilityNames().stream()
         // Matching of extension capabilities is implementation independent. Skip them
         .filter(name -> !name.contains(":"))
-        // Platform matching is special, we do it later
-        .filter(name -> !"platformName".equalsIgnoreCase(name))
+        // Browser matching is special, we do it later
+        .filter(name -> BROWSER_CAPABILITIES.stream().noneMatch(name::contains))
         .map(
             name -> {
               if (capabilities.getCapability(name) instanceof String) {
